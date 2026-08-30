@@ -43,6 +43,7 @@ from .decoration import (
     hat, jacket_front, pants_outline,
     add_highlights, add_shadows, apply_3d_decoration,
 )
+from .features import face, hair, band
 from .patterns import (
     apply_pattern,
     PATTERNS,
@@ -66,6 +67,7 @@ __all__ = [
     "artistic", "artistic_full",
     "hat", "jacket_front", "pants_outline",
     "add_highlights", "add_shadows", "apply_3d_decoration",
+    "face", "hair", "band",
     "apply_pattern", "PATTERNS", "stripes", "checker", "camouflage",
     "sample_palette", "dominant_colors",
     "render_3d", "render_flat", "render_isometric",
@@ -74,4 +76,4 @@ __all__ = [
     "validate", "validate_report",
 ]
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"

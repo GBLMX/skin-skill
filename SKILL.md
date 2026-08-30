@@ -12,7 +12,7 @@ Minecraft player skins, with double-layer and dual-model support.
 
 ```
 skinlib/
-├── __init__.py      # public API, version 2.1
+├── __init__.py      # public API, version 2.2
 ├── model.py         # UV layouts (Steve/Alex) + Skin object + color parsing
 ├── colors.py        # pure color math (mix/shade/gray/blend/gradient/palette)
 ├── shading.py       # realistic shading (gradient/cylinder/combined/artistic/noise)
@@ -23,6 +23,7 @@ skinlib/
 ├── poses.py         # body poses (natural/walking/sitting/crouching/jumping/aiming)
 ├── palette.py       # vanilla color palettes (skin/hair/clothing/energy)
 ├── decoration.py    # 3D decoration (hat/jacket/pants + highlight/shadow accents)
+├── features.py      # face details + 3D hair + wrap-around bands
 ├── validate.py      # skin validation (dimensions/opacity/colors)
 └── templates.py     # knight/villager/astronaut presets
 ```
@@ -51,6 +52,11 @@ python skin_tool.py template knight -o knight.png
 
 # 3D decoration (sparse overlay: hat/jacket/pants)
 python skin_tool.py decorate skin.png --hat 200,30,30 --jacket 30,30,40 --pants 20,40,90
+
+# Character features (face / hair / bands)
+python skin_tool.py hair skin.png --color 198,196,190
+python skin_tool.py face skin.png --eyes 96,226,140
+python skin_tool.py band skin.png --part body --v0 9 --v1 10 --color 176,146,60
 
 # Sample a palette from a reference image
 python skin_tool.py sample character.png --colors 6
@@ -85,6 +91,12 @@ from skinlib import apply_3d_decoration
 apply_3d_decoration(s, hat_color=(200, 30, 30, 255),
                     jacket_color=(30, 30, 40, 255),
                     pants_color=(20, 40, 90, 255))
+
+# character features (face / hair / wrap-around bands)
+from skinlib import face, hair, band
+hair(s, (198, 196, 190, 255))               # 3D two-layer hair
+face(s, eye_color=(96, 226, 140, 255))      # facial details
+band(s, "body", 9, 10, (176, 146, 60, 255)) # wrap-around belt
 ```
 
 ## Body Poses (borrowed from Blockbench)
@@ -136,3 +148,11 @@ Legacy 64x32 skins are auto-converted to the modern 64x64 layout on load
 See `examples/cao_alarak.py` for a full character skin (曹操 × 阿拉纳克 fusion)
 built with the shading API. Reference UV coordinates are in
 `references/skin_layout.md`.
+
+### Reference skins (quality examples)
+
+Real skins bundled under `examples/` as style references:
+
+- `reference_steve.png` — default vanilla player skin (facial-detail convention)
+- `reference_zombie.png` — vanilla zombie (green skin, simple face)
+- `reference_hoodie_xty.png` — 双色卫衣 (two-color hoodie) with 3D overlay depth

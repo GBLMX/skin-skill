@@ -32,6 +32,7 @@ from skinlib.palette import all_palettes
 from skinlib.validate import validate_report
 from skinlib.poses import POSES
 from skinlib.decoration import apply_3d_decoration
+from skinlib.features import face, hair, band
 
 
 def _cmd_create(a):
@@ -98,6 +99,35 @@ def _cmd_decorate(a):
     )
     s.save(out)
     print(f"decorated -> {out}")
+
+
+def _cmd_hair(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    hair(s, parse_color(a.color),
+         light=parse_color(a.light) if a.light else None,
+         dark=parse_color(a.dark) if a.dark else None)
+    s.save(out)
+    print(f"hair -> {out}")
+
+
+def _cmd_face(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    face(s,
+         eye_color=parse_color(a.eyes) if a.eyes else (96, 226, 140, 255),
+         brow_color=parse_color(a.brows) if a.brows else (120, 110, 105, 255),
+         mouth_color=parse_color(a.mouth) if a.mouth else (110, 92, 88, 255))
+    s.save(out)
+    print(f"face -> {out}")
+
+
+def _cmd_band(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    band(s, a.part, a.v0, a.v1, parse_color(a.color), layer=a.layer)
+    s.save(out)
+    print(f"band -> {out}")
 
 
 def _cmd_sample(a):
@@ -219,6 +249,32 @@ def build_parser():
     dec.add_argument("-o", "--output", default=None)
     dec.add_argument("--model", choices=("steve", "alex"), default="steve")
     dec.set_defaults(func=_cmd_decorate)
+
+    h = sub.add_parser("hair"); h.add_argument("input")
+    h.add_argument("--color", required=True, help="hair color (R,G,B)")
+    h.add_argument("--light", default=None, help="strand highlight (R,G,B)")
+    h.add_argument("--dark", default=None, help="strand shadow (R,G,B)")
+    h.add_argument("-o", "--output", default=None)
+    h.add_argument("--model", choices=("steve", "alex"), default="steve")
+    h.set_defaults(func=_cmd_hair)
+
+    fa = sub.add_parser("face"); fa.add_argument("input")
+    fa.add_argument("--eyes", default=None, help="eye color (R,G,B)")
+    fa.add_argument("--brows", default=None, help="brow color (R,G,B)")
+    fa.add_argument("--mouth", default=None, help="mouth color (R,G,B)")
+    fa.add_argument("-o", "--output", default=None)
+    fa.add_argument("--model", choices=("steve", "alex"), default="steve")
+    fa.set_defaults(func=_cmd_face)
+
+    b = sub.add_parser("band"); b.add_argument("input")
+    b.add_argument("--part", required=True, choices=PARTS)
+    b.add_argument("--v0", type=int, required=True, help="first row (inclusive)")
+    b.add_argument("--v1", type=int, required=True, help="last row (inclusive)")
+    b.add_argument("--color", required=True)
+    b.add_argument("--layer", choices=LAYERS, default="overlay")
+    b.add_argument("-o", "--output", default=None)
+    b.add_argument("--model", choices=("steve", "alex"), default="steve")
+    b.set_defaults(func=_cmd_band)
 
     sm = sub.add_parser("sample"); sm.add_argument("input")
     sm.add_argument("--colors", type=int, default=6)
