@@ -156,3 +156,6 @@ Real skins bundled under `examples/` as style references:
 - `reference_steve.png` — default vanilla player skin (facial-detail convention)
 - `reference_zombie.png` — vanilla zombie (green skin, simple face)
 - `reference_hoodie_xty.png` — 双色卫衣 (two-color hoodie) with 3D overlay depth
+- `reference_gawrgura.png` — Gawr Gura (VTuber) character skin
+- `reference_pc_man.png` — 电脑人 (computer person) skin
+- `reference_sasuke.png` — 宇智波佐助 (Uchiha Sasuke) character skin
