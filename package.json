@@ -1,0 +1,12 @@
+{
+  "name": "skin-skill",
+  "version": "2.2.0",
+  "description": "Minecraft player skin generator and editor for pi coding agent (Python + Pillow)",
+  "keywords": ["pi-package", "minecraft", "skin", "skill"],
+  "license": "MIT",
+  "author": "GBLMX",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GBLMX/skin-skill.git"
+  }
+}
