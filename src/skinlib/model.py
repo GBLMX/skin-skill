@@ -192,6 +192,28 @@ def detect_model(img: Image.Image) -> str:
     return "steve" if opaque >= 3 else "alex"
 
 
+def strip_matte(img: Image.Image) -> Image.Image:
+    """Remove a solid-color alpha matte, per the Minecraft skin convention.
+
+    Mojang serves many skins with a *matte*: the exact RGBA of the top-left
+    pixel marks "transparent" instead of a real alpha channel (see
+    https://github.com/minotar/skin-spec). If the top-left pixel is opaque,
+    every pixel equal to it becomes fully transparent. No-op for skins that
+    already use a real alpha channel (top-left alpha == 0).
+    """
+    if img.mode != "RGBA":
+        img = img.convert("RGBA")
+    key = img.getpixel((0, 0))
+    if key[3] == 0:
+        return img
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            if px[x, y] == key:
+                px[x, y] = (key[0], key[1], key[2], 0)
+    return img
+
+
 # ---------------------------------------------------------------------------
 # Color parsing
 # ---------------------------------------------------------------------------
@@ -327,6 +349,7 @@ class Skin:
         img = Image.open(path).convert("RGBA")
         if img.size not in ((64, 64), (128, 128), (64, 32)):
             raise ValueError("skin must be 64x64, 128x128, or 64x32")
+        img = strip_matte(img)
         if img.size == (64, 32):
             img = legacy_to_modern(img)
         if model == "auto":

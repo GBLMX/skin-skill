@@ -1,0 +1,15 @@
+{
+  "size": 64,
+  "model": "steve",
+  "steps": [
+    {"op": "shading", "part": "head", "color": "#f0be96", "style": "combined"},
+    {"op": "material", "part": "body", "material": "metal"},
+    {"op": "overlay", "part": "body", "overlay": "scratches", "seed": 5},
+    {"op": "overlay", "part": "body", "overlay": "runes", "color": "#78dcff", "seed": 5},
+    {"op": "material", "part": "right_arm", "material": "leather"},
+    {"op": "material", "part": "left_arm", "material": "cloth"},
+    {"op": "material", "part": "right_leg", "material": "bone"},
+    {"op": "material", "part": "left_leg", "material": "metal", "color": "#78141a"}
+  ],
+  "output": "example_recipe.png"
+}

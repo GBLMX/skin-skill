@@ -20,6 +20,7 @@ from .model import (
     make_layout,
     legacy_to_modern,
     detect_model,
+    strip_matte,
     create,
     load,
     parse_color,
@@ -65,11 +66,23 @@ from .materials import (
     specular_streak,
     glow_center,
 )
+from .overlay import (
+    overlay_pattern,
+    apply_overlay,
+    OVERLAYS,
+    rect_mask,
+    random_mask,
+    scratches,
+    cracks,
+    runes,
+)
+from .recipe import generate_from_recipe, recipe_to_python, OPS
 
 __all__ = [
     "Skin", "Color", "Part", "Layer", "Face",
     "PARTS", "LAYERS", "FACES",
-    "SteveLayout", "make_layout", "legacy_to_modern", "detect_model", "create", "load", "parse_color",
+    "SteveLayout", "make_layout", "legacy_to_modern", "detect_model",
+    "strip_matte", "create", "load", "parse_color",
     "mix", "shade", "gray", "blend", "gradient",
     "apply_shading", "cylindrical", "vertical_gradient", "combined",
     "fabric_noise", "outline",
@@ -85,6 +98,9 @@ __all__ = [
     "validate", "validate_report",
     "Material", "MATERIALS", "apply_material",
     "noise_grain", "specular_streak", "glow_center",
+    "overlay_pattern", "apply_overlay", "OVERLAYS",
+    "rect_mask", "random_mask", "scratches", "cracks", "runes",
+    "generate_from_recipe", "recipe_to_python", "OPS",
 ]
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"

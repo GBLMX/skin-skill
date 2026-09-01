@@ -64,6 +64,49 @@ from skinlib import MATERIALS, apply_material
 apply_material(skin, "body", "metal", color=(200, 200, 210, 255), seed=7)
 ```
 
+### Overlays & masks
+
+Composite battle damage, cracks, or glowing runes onto a part without touching
+its base color:
+
+```python
+from skinlib import apply_overlay, overlay_pattern, rect_mask
+
+apply_overlay(skin, "body", "scratches", seed=3)          # battle damage
+apply_overlay(skin, "body", "runes", color=(120, 220, 255, 255))
+
+# general: composite a pattern through a mask with a blend mode
+overlay_pattern(skin, "body", (0, 0, 0, 255), mode="multiply",
+                mask=rect_mask(0, 0, 4, 4))
+```
+
+Effects: `scratches`, `cracks`, `runes`. Blend modes: `blend`, `multiply`,
+`add`, `replace`. Masks: `rect_mask`, `random_mask`.
+
+### Recipes
+
+Describe a skin declaratively as JSON and build it (or emit a Python script):
+
+```python
+from skinlib import generate_from_recipe, recipe_to_python
+
+recipe = {
+    "size": 64, "model": "steve",
+    "steps": [
+        {"op": "material", "part": "body", "material": "metal"},
+        {"op": "overlay", "part": "body", "overlay": "cracks", "seed": 2},
+        {"op": "material", "part": "head", "material": "glow_crystal"},
+    ],
+    "output": "skin.png",
+}
+skin = generate_from_recipe(recipe)     # build + save
+print(recipe_to_python(recipe))         # emit equivalent script
+```
+
+Ops: `shading`, `material`, `pattern`, `overlay`, `decorate`, `face`, `hair`,
+`band`, `outline`, `pixel`, `paint`. Colors can be `"R,G,B"` / `"#RRGGBB"`
+strings or `[r, g, b]` lists.
+
 ### More
 
 - **Shading styles**: `flat`, `vertical`, `cylindrical`, `combined`, `artistic`
@@ -72,6 +115,8 @@ apply_material(skin, "body", "metal", color=(200, 200, 210, 255), seed=7)
 - **Features**: `face()`, `hair()`, `band()`, 3D decoration
 - **Sampling**: `sample_palette("ref.png", 6)` to match a reference image
 - **Poses**: `natural`, `walking`, `sitting`, `crouching`, `jumping`, `aiming`
+- **Loading**: legacy 64×32 auto-converts to 64×64; Mojang matte (solid-color
+  transparency keyed on the top-left pixel) is auto-stripped on load
 
 See the full public API in `skinlib/__init__.py`, and `examples/` for a complete
 character built with the shading API.

@@ -1,6 +1,6 @@
 {
   "name": "skin-skill",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Minecraft player skin generator and editor (mc-skin Python library + pi skill adapter)",
   "keywords": ["pi-package", "minecraft", "skin", "skill"],
   "license": "MIT",

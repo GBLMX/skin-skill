@@ -5,7 +5,7 @@ from PIL import Image
 
 from skinlib import Skin, create, parse_color
 from skinlib.model import (
-    SteveLayout, make_layout, detect_model, legacy_to_modern,
+    SteveLayout, make_layout, detect_model, legacy_to_modern, strip_matte,
     PARTS, LAYERS, FACES,
 )
 
@@ -85,3 +85,32 @@ def test_save_load_roundtrip(tmp_path):
     s.save(str(p))
     s2 = Skin.load(str(p), model="steve")
     assert s2.img.getpixel((8, 8)) == (240, 190, 150, 255)
+
+
+def test_strip_matte():
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    img.putpixel((0, 0), (255, 0, 255, 255))       # matte key at top-left
+    img.putpixel((10, 10), (255, 0, 255, 255))     # matte-colored -> transparent
+    img.putpixel((20, 20), (100, 100, 100, 255))   # real pixel stays
+    out = strip_matte(img)
+    assert out.getpixel((0, 0))[3] == 0
+    assert out.getpixel((10, 10))[3] == 0
+    assert out.getpixel((20, 20)) == (100, 100, 100, 255)
+
+
+def test_strip_matte_noop_when_transparent():
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    out = strip_matte(img)
+    assert out.getpixel((0, 0)) == (0, 0, 0, 0)
+
+
+def test_load_strips_matte(tmp_path):
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    img.putpixel((0, 0), (255, 0, 255, 255))       # matte key
+    img.putpixel((8, 8), (255, 0, 255, 255))       # head front corner (matte)
+    img.putpixel((9, 9), (100, 100, 100, 255))
+    p = tmp_path / "matte.png"
+    img.save(str(p))
+    s = Skin.load(str(p), model="steve")
+    assert s.img.getpixel((8, 8))[3] == 0
+    assert s.img.getpixel((9, 9)) == (100, 100, 100, 255)

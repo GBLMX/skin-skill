@@ -20,6 +20,8 @@ Then use either the `mc-skin` CLI or the `skinlib` Python API.
 mc-skin create -o skin.png --size 64 --model steve
 mc-skin shading skin.png --part body --color 120,20,25 --style combined --noise
 mc-skin material skin.png --part body --material leather
+mc-skin overlay skin.png --part body --overlay scratches --seed 3
+mc-skin recipe recipe.json -o skin.png
 mc-skin template knight -o knight.png
 mc-skin render skin.png --outdir previews
 ```

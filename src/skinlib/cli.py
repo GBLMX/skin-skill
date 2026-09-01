@@ -35,6 +35,8 @@ from .poses import POSES
 from .decoration import apply_3d_decoration
 from .features import face, hair, band
 from .materials import apply_material, MATERIALS
+from .overlay import apply_overlay, OVERLAYS
+from .recipe import generate_from_recipe
 
 DEFAULT_BLOCKBENCH = os.environ.get("BLOCKBENCH", r"C:\Program Files\Blockbench\Blockbench.exe")
 
@@ -74,6 +76,24 @@ def _cmd_material(a):
                    layer=a.layer, seed=a.seed)
     s.save(out)
     print(f"material {a.material} -> {out}")
+
+
+def _cmd_overlay(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    kw = {}
+    if a.color:
+        kw["color"] = parse_color(a.color)
+    if a.count is not None:
+        kw["count"] = a.count
+    apply_overlay(s, a.part, a.overlay, layer=a.layer, seed=a.seed, **kw)
+    s.save(out)
+    print(f"overlay {a.overlay} -> {out}")
+
+
+def _cmd_recipe(a):
+    generate_from_recipe(a.recipe, output=a.output)
+    print("recipe done")
 
 
 def _cmd_pattern(a):
@@ -262,6 +282,21 @@ def build_parser():
     m.add_argument("-o", "--output", default=None)
     m.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     m.set_defaults(func=_cmd_material)
+
+    ov = sub.add_parser("overlay"); ov.add_argument("input")
+    ov.add_argument("--part", required=True, choices=PARTS)
+    ov.add_argument("--overlay", required=True, choices=sorted(OVERLAYS))
+    ov.add_argument("--color", default=None, help="effect color (R,G,B)")
+    ov.add_argument("--layer", choices=LAYERS, default="base")
+    ov.add_argument("--count", type=int, default=None)
+    ov.add_argument("--seed", type=int, default=0)
+    ov.add_argument("-o", "--output", default=None)
+    ov.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
+    ov.set_defaults(func=_cmd_overlay)
+
+    rc = sub.add_parser("recipe"); rc.add_argument("recipe", help="recipe JSON file or inline JSON")
+    rc.add_argument("-o", "--output", default=None)
+    rc.set_defaults(func=_cmd_recipe)
 
     pt = sub.add_parser("pattern"); pt.add_argument("input")
     pt.add_argument("--part", required=True, choices=PARTS)
