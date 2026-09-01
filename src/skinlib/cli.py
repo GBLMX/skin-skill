@@ -23,19 +23,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from skinlib.model import Skin, PARTS, LAYERS, FACES, parse_color, create, load
-from skinlib.shading import apply_shading, outline
-from skinlib.patterns import apply_pattern, PATTERNS
-from skinlib.sampling import sample_palette
-from skinlib.render import save_previews, render_3d
-from skinlib.templates import build_template, TEMPLATES
-from skinlib.palette import all_palettes
-from skinlib.validate import validate_report
-from skinlib.poses import POSES
-from skinlib.decoration import apply_3d_decoration
-from skinlib.features import face, hair, band
+from .model import Skin, PARTS, LAYERS, FACES, parse_color, create, load
+from .shading import apply_shading, outline
+from .patterns import apply_pattern, PATTERNS
+from .sampling import sample_palette
+from .render import save_previews, render_3d
+from .templates import build_template, TEMPLATES
+from .palette import all_palettes
+from .validate import validate_report
+from .poses import POSES
+from .decoration import apply_3d_decoration
+from .features import face, hair, band
+from .materials import apply_material, MATERIALS
 
 DEFAULT_BLOCKBENCH = os.environ.get("BLOCKBENCH", r"C:\Program Files\Blockbench\Blockbench.exe")
 
@@ -65,6 +64,16 @@ def _cmd_shading(a):
                   noise=a.noise, noise_var=a.noise_var, seed=a.seed)
     s.save(out)
     print(f"shaded {a.part}/{a.layer} ({a.style}) -> {out}")
+
+
+def _cmd_material(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    apply_material(s, a.part, a.material,
+                   color=parse_color(a.color) if a.color else None,
+                   layer=a.layer, seed=a.seed)
+    s.save(out)
+    print(f"material {a.material} -> {out}")
 
 
 def _cmd_pattern(a):
@@ -243,6 +252,16 @@ def build_parser():
     sh.add_argument("-o", "--output", default=None)
     sh.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     sh.set_defaults(func=_cmd_shading)
+
+    m = sub.add_parser("material"); m.add_argument("input")
+    m.add_argument("--part", required=True, choices=PARTS)
+    m.add_argument("--material", required=True, choices=sorted(MATERIALS))
+    m.add_argument("--color", default=None, help="base color (R,G,B)")
+    m.add_argument("--layer", choices=LAYERS, default="base")
+    m.add_argument("--seed", type=int, default=None)
+    m.add_argument("-o", "--output", default=None)
+    m.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
+    m.set_defaults(func=_cmd_material)
 
     pt = sub.add_parser("pattern"); pt.add_argument("input")
     pt.add_argument("--part", required=True, choices=PARTS)

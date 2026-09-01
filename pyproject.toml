@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mc-skin"
+version = "3.0.0"
+description = "Programmatic Minecraft player skin generation and editing: double-layer, Steve/Alex, realistic shading, materials, and 3D rendering."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "GBLMX" }]
+keywords = ["minecraft", "skin", "texture", "pixel-art", "blockbench", "skinlib"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Games/Entertainment",
+    "Topic :: Multimedia :: Graphics",
+]
+dependencies = [
+    "Pillow>=9.0",
+]
+
+[project.optional-dependencies]
+# Fancier gradient noise (Simplex via opensimplex) as an opt-in extra.
+# The default package ships a pure-Python Perlin implementation with zero
+# dependencies beyond Pillow.
+noise = ["opensimplex>=0.4"]
+
+[project.urls]
+Homepage = "https://github.com/GBLMX/skin-skill"
+Repository = "https://github.com/GBLMX/skin-skill"
+
+[project.scripts]
+mc-skin = "skinlib.cli:main"
+skin-tool = "skinlib.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

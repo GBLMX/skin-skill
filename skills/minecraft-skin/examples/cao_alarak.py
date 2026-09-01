@@ -4,10 +4,6 @@
 融合王者荣耀曹操（暗红袍、金纹）与星际2阿拉纳克（塔达林装甲、血红能量）。
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from skinlib import Skin, apply_shading, render_3d
 
 # ---- 配色 ----

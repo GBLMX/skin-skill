@@ -6,10 +6,10 @@ Blockbench MCP (`blockbench_*` tools).
 
 ## Prerequisites
 
-- Python 3 + Pillow (`pip install pillow`)
+- Python 3 + Pillow (`pip install mc-skin`)
 - Blockbench (desktop) running with `blockbench-mcp-plugin` loaded
 - pi connected to the MCP server at `http://localhost:3000/bb-mcp`
-- skinlib importable (skill dir `skills/minecraft-skin` on `sys.path`)
+- skinlib importable (`pip install mc-skin`)
 
 ## Phase 1 — Generate the skin (skinlib)
 
@@ -30,8 +30,6 @@ Quality rules learned in practice:
   deprecated in Pillow 10+).
 
 ```python
-import sys
-sys.path.insert(0, r"<skill>/skills/minecraft-skin")
 from skinlib import Skin, apply_shading, render_3d
 from PIL import Image
 
@@ -97,7 +95,7 @@ Export the flat texture PNG if needed (or just keep the Phase-1 `skin.png`).
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| MCP reports "No project is open" | `skin_tool.py open` spawned a second Blockbench instance | Use MCP tools, not the CLI `open` |
+| MCP reports "No project is open" | `mc-skin open` spawned a second Blockbench instance | Use MCP tools, not the CLI `open` |
 | Texture name is a base64 tail | `create_texture` `data` was raw base64 | Pass a file path or `data:image/...` URL |
 | Texture loads but no 3D model | `Codecs.skin_model.rebuild()` never called | Call `rebuild("steve")` after loading texture |
 | Model duplicated (14 groups / 24 cubes) | `rebuild` appends; called twice | `for (const g of [...Outliner.root]) g.remove()` first |

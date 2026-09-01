@@ -57,6 +57,14 @@ from .render import render_3d, render_flat, render_isometric
 from .palette import SKIN_TONES, HAIR_COLORS, CLOTHING, ENERGY, all_palettes
 from .poses import POSES, get_pose, PartPose
 from .validate import validate, validate_report
+from .materials import (
+    Material,
+    MATERIALS,
+    apply_material,
+    noise_grain,
+    specular_streak,
+    glow_center,
+)
 
 __all__ = [
     "Skin", "Color", "Part", "Layer", "Face",
@@ -75,6 +83,8 @@ __all__ = [
     "SKIN_TONES", "HAIR_COLORS", "CLOTHING", "ENERGY", "all_palettes",
     "POSES", "get_pose", "PartPose",
     "validate", "validate_report",
+    "Material", "MATERIALS", "apply_material",
+    "noise_grain", "specular_streak", "glow_center",
 ]
 
-__version__ = "2.2.0"
+__version__ = "3.0.0"
