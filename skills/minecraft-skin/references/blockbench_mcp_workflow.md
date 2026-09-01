@@ -116,8 +116,9 @@ Formats.skin           // the "Minecraft 皮肤" format object
 
 ## Real example
 
-`E:\necromancer\scripts\v3_optimize_necromancer.py` — necromancer v3 skin with
-four optimization passes (readable dark-purple palette, artistic shading,
+`examples/necromancer.py` (in this skill) — necromancer v3 skin with four
+optimization passes (readable dark-purple palette, artistic shading,
 necromancer theme details: skull emblem / runes / bone armor, hood+white-hair
-fusion). Full version archive at `E:\necromancer\README.md`. Loaded into
-Blockbench via the Phase-3 steps and saved to `E:\necromancer\model.bbmodel`.
+fusion). Full project archive (v1→v3 history, `.bbmodel`) at
+`E:\necromancer\README.md`. Loaded into Blockbench via the Phase-3 steps and
+saved to `E:\necromancer\model.bbmodel`.
