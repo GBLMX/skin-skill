@@ -118,3 +118,35 @@ def apply_shading(skin: Skin, part, base: Color, layer: str = "base",
     if noise:
         fabric_noise(skin, part, layer, variance=noise_var, seed=seed)
     return skin
+
+
+# ---------------------------------------------------------------------------
+# Style profiles ("风格基因"): map a visual style to artistic/shading params
+# ---------------------------------------------------------------------------
+# Each profile binds a shading style to the exact artistic.py parameters that
+# produce that look — metal highlight, mottled texture, or minimal no-detail.
+STYLE_PROFILES = {
+    # 极简：纯色，无褶皱无噪点
+    "minimal": {"style": "flat"},
+    # 干净：轻微圆柱立体，无噪点
+    "clean": {"style": "combined", "edge": 0.85, "center": 1.05},
+    # 金属高光：强边缘压暗 + 顶部提亮，无褶皱
+    "metal": {"style": "artistic", "folds": False, "top_bright": 1.15,
+              "bottom_dark": 0.5, "edge_dark": 0.6, "collar": True},
+    # 斑驳纹理：褶皱 + 重噪点（布料/旧化）
+    "mottled": {"style": "artistic", "folds": True, "noise": True, "noise_var": 8},
+    # 皮革：褶皱 + 轻噪点
+    "leathery": {"style": "artistic", "folds": True, "noise": True, "noise_var": 5},
+}
+
+
+def apply_style(skin: Skin, part, base: Color, profile: str,
+                layer: str = "base", seed: int = 0) -> Skin:
+    """Apply a named style profile to a part. Returns the skin for chaining."""
+    if profile not in STYLE_PROFILES:
+        raise ValueError(f"unknown style profile {profile!r}; "
+                         f"choices: {sorted(STYLE_PROFILES)}")
+    p = dict(STYLE_PROFILES[profile])
+    style = p.pop("style")
+    apply_shading(skin, part, base, layer, style=style, seed=seed, **p)
+    return skin

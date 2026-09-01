@@ -36,6 +36,27 @@ s.save("skin.png")
 render_3d(s, pose="walking").save("preview.png")
 ```
 
+## 皮肤美学参考（风格基因）
+
+| 风格 | 入口 | 配色 | 光影档案 |
+|------|------|------|----------|
+| Noob（极简黑灰） | `template noob` | 黑灰（`CLOTHING` gray/dark_gray/black） | `minimal`（flat，无褶皱无噪点） |
+| Herobrine（白瞳） | `template herobrine` | Steve 青衫 + 荚蓝裤 | `clean`（轻圆柱） + 白瞳 `face` |
+| 中世纪骑士 | `template medieval_knight` | 金属灰 + 红 + 金 | `metal` 材质 + 红 tunic + 金腰带 |
+| 金属高光 | `apply_style(..., "metal")` | 任意 | artistic 强边缘压暗 + 顶部提亮，无褶皱 |
+| 斑驳旧化 | `apply_style(..., "mottled")` | 任意 | artistic 褶皱 + 噪点(noise_var=8) |
+| 极简无细节 | `apply_style(..., "minimal")` | 任意 | flat |
+
+光影档案 `STYLE_PROFILES` / `apply_style()`：`minimal` / `clean` / `metal` /
+`mottled` / `leathery`。材质 `apply_material()`：`cloth` / `leather` / `metal` /
+`bone` / `glow_crystal`。
+
+**参考图源**：Noob / Herobrine 等标准 64×64 皮肤可在
+[The Skindex](https://www.minecraftskins.com/) 或 [NameMC](https://namemc.com/)
+搜索下载，用作算法训练与风格参考素材。本 skill 的 `examples/` 已内置
+`reference_noob.png` / `reference_herobrine.png` / `reference_medieval_knight.png`
+（由模板生成）。
+
 The full API lives in the library's `skinlib/__init__.py` and README; run
 `mc-skin --help` for the CLI. See `references/skin_layout.md` for the UV
 coordinate map, and `references/blockbench_mcp_workflow.md` for driving

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from .model import Skin
-from .shading import apply_shading
+from .shading import apply_shading, apply_style
+from .materials import apply_material
+from .features import face, band
+from .palette import SKIN_TONES, CLOTHING
 
 
 def knight() -> Skin:
@@ -58,10 +61,58 @@ def astronaut() -> Skin:
     return s
 
 
+def noob() -> Skin:
+    """The classic 'noob' skin: a fixed black/gray palette, minimal detail."""
+    s = Skin(size=64)
+    apply_shading(s, "head", SKIN_TONES["steve_classic"], "base", style="combined")
+    apply_style(s, "body", CLOTHING["gray"], "minimal")
+    apply_style(s, "right_arm", CLOTHING["gray"], "minimal")
+    apply_style(s, "left_arm", CLOTHING["gray"], "minimal")
+    apply_style(s, "right_leg", CLOTHING["black"], "minimal")
+    apply_style(s, "left_leg", CLOTHING["black"], "minimal")
+    apply_shading(s, "body", CLOTHING["dark_gray"], "overlay", style="combined")
+    return s
+
+
+def herobrine() -> Skin:
+    """Herobrine: Steve's palette with glowing white eyes."""
+    s = Skin(size=64)
+    shirt = (0, 150, 160, 255)
+    pants = (60, 40, 160, 255)
+    apply_shading(s, "head", SKIN_TONES["steve_classic"], "base", style="combined")
+    apply_style(s, "body", shirt, "clean")
+    apply_style(s, "right_arm", shirt, "clean")
+    apply_style(s, "left_arm", shirt, "clean")
+    apply_style(s, "right_leg", pants, "clean")
+    apply_style(s, "left_leg", pants, "clean")
+    face(s, eye_color=(255, 255, 255, 255))
+    return s
+
+
+def medieval_knight() -> Skin:
+    """Medieval knight: metal plate + red tunic + gold belt."""
+    s = Skin(size=64)
+    red = (160, 40, 40, 255)
+    gold = (210, 170, 60, 255)
+    apply_shading(s, "head", SKIN_TONES["tan"], "base", style="combined")
+    apply_material(s, "head", "metal", layer="overlay")        # helmet
+    apply_material(s, "body", "metal")                          # plate body
+    apply_shading(s, "body", red, "overlay", style="artistic")  # tunic
+    apply_material(s, "right_arm", "metal")
+    apply_material(s, "left_arm", "metal")
+    apply_material(s, "right_leg", "metal")
+    apply_material(s, "left_leg", "metal")
+    band(s, "body", 5, 6, gold, layer="overlay")                # gold belt
+    return s
+
+
 TEMPLATES = {
     "knight": knight,
     "villager": villager,
     "astronaut": astronaut,
+    "noob": noob,
+    "herobrine": herobrine,
+    "medieval_knight": medieval_knight,
 }
 
 

@@ -34,6 +34,8 @@ from .colors import (
 )
 from .shading import (
     apply_shading,
+    apply_style,
+    STYLE_PROFILES,
     cylindrical,
     vertical_gradient,
     combined,
@@ -58,6 +60,7 @@ from .render import render_3d, render_flat, render_isometric
 from .palette import SKIN_TONES, HAIR_COLORS, CLOTHING, ENERGY, all_palettes
 from .poses import POSES, get_pose, PartPose
 from .validate import validate, validate_report
+from .templates import build_template, TEMPLATES
 from .materials import (
     Material,
     MATERIALS,
@@ -84,7 +87,7 @@ __all__ = [
     "SteveLayout", "make_layout", "legacy_to_modern", "detect_model",
     "strip_matte", "create", "load", "parse_color",
     "mix", "shade", "gray", "blend", "gradient",
-    "apply_shading", "cylindrical", "vertical_gradient", "combined",
+    "apply_shading", "apply_style", "STYLE_PROFILES", "cylindrical", "vertical_gradient", "combined",
     "fabric_noise", "outline",
     "artistic",
     "hat", "jacket_front", "pants_outline",
@@ -94,6 +97,7 @@ __all__ = [
     "sample_palette", "dominant_colors",
     "render_3d", "render_flat", "render_isometric",
     "SKIN_TONES", "HAIR_COLORS", "CLOTHING", "ENERGY", "all_palettes",
+    "build_template", "TEMPLATES",
     "POSES", "get_pose", "PartPose",
     "validate", "validate_report",
     "Material", "MATERIALS", "apply_material",
@@ -103,4 +107,4 @@ __all__ = [
     "generate_from_recipe", "recipe_to_python", "OPS",
 ]
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"

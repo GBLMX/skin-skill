@@ -111,7 +111,8 @@ strings or `[r, g, b]` lists.
 
 - **Shading styles**: `flat`, `vertical`, `cylindrical`, `combined`, `artistic`
 - **Patterns**: `stripes`, `checker`, `camouflage`, `border_trim`
-- **Templates**: `knight`, `villager`, `astronaut`
+- **Templates**: `knight`, `villager`, `astronaut`, `noob`, `herobrine`, `medieval_knight`
+- **Style profiles**: `apply_style(skin, part, color, "metal"|"mottled"|"minimal"|"clean"|"leathery")`
 - **Features**: `face()`, `hair()`, `band()`, 3D decoration
 - **Sampling**: `sample_palette("ref.png", 6)` to match a reference image
 - **Poses**: `natural`, `walking`, `sitting`, `crouching`, `jumping`, `aiming`

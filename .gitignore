@@ -4,3 +4,8 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# Third-party character skins (kept locally, not redistributed).
+skills/minecraft-skin/examples/reference_gawrgura.png
+skills/minecraft-skin/examples/reference_sasuke.png
+skills/minecraft-skin/examples/reference_hoodie_xty.png

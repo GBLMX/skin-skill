@@ -312,7 +312,7 @@ def build_parser():
     pt.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     pt.set_defaults(func=_cmd_pattern)
 
-    t = sub.add_parser("template"); t.add_argument("name")
+    t = sub.add_parser("template"); t.add_argument("name", choices=sorted(TEMPLATES))
     t.add_argument("-o", "--output", default="skin.png")
     t.set_defaults(func=_cmd_template)
 
