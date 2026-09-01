@@ -178,6 +178,20 @@ def legacy_to_modern(img: Image.Image) -> Image.Image:
     return out
 
 
+def detect_model(img: Image.Image) -> str:
+    """Detect 'steve' (4px arms) vs 'alex' (3px slim arms) heuristically.
+
+    Slim (Alex) skins leave a 1px transparent column in the right-arm band —
+    the gap between the left and back faces — while Steve skins fill all 16
+    columns. Sample column x=50 across the vertical arm faces.
+    """
+    opaque = 0
+    for y in (22, 24, 26, 28, 30):
+        if img.getpixel((50, y))[3] > 16:
+            opaque += 1
+    return "steve" if opaque >= 3 else "alex"
+
+
 # ---------------------------------------------------------------------------
 # Color parsing
 # ---------------------------------------------------------------------------
@@ -235,19 +249,31 @@ class Skin:
 
     # -- pixel access -------------------------------------------------------
     def pixel(self, part: Part, layer: Layer, face: Face, u: int, v: int, color):
+        """Paint one logical pixel (64px grid) as a scale-aware block.
+
+        u/v are logical coordinates in the 64px skin layout. On 128px skins
+        each logical pixel expands to a ``scale x scale`` block, so callers
+        can keep 64px coordinates regardless of resolution.
+        """
         x, y, w, h = self.region(part, layer, face)
-        if not (0 <= u < w and 0 <= v < h):
+        lw, lh = w // self.scale, h // self.scale
+        if not (0 <= u < lw and 0 <= v < lh):
             raise ValueError(f"({u},{v}) outside {part}/{layer}/{face}")
-        self.img.putpixel((x + u, y + v), color)
+        x0, y0 = x + u * self.scale, y + v * self.scale
+        for du in range(self.scale):
+            for dv in range(self.scale):
+                self.img.putpixel((x0 + du, y0 + dv), color)
 
     def get_pixel(self, part: Part, layer: Layer, face: Face, u: int, v: int) -> Color:
+        """Return the color of a logical pixel (top-left of its block)."""
         x, y, w, h = self.region(part, layer, face)
-        return self.img.getpixel((x + u, y + v))
+        return self.img.getpixel((x + u * self.scale, y + v * self.scale))
 
     # -- face / part painting ----------------------------------------------
     def paint_face(self, part: Part, layer: Layer, face: Face, color):
         x, y, w, h = self.region(part, layer, face)
-        self.draw.rectangle((x, y, x + w, y + h), fill=color)
+        # PIL rectangle endpoints are inclusive, so subtract 1 to fill exactly w x h.
+        self.draw.rectangle((x, y, x + w - 1, y + h - 1), fill=color)
 
     def paint_part(self, part: Part, color, layer: Layer = "base"):
         for face in FACES:
@@ -297,12 +323,14 @@ class Skin:
         return Path(path)
 
     @classmethod
-    def load(cls, path: str, model: str = "steve") -> "Skin":
+    def load(cls, path: str, model: str = "auto") -> "Skin":
         img = Image.open(path).convert("RGBA")
         if img.size not in ((64, 64), (128, 128), (64, 32)):
             raise ValueError("skin must be 64x64, 128x128, or 64x32")
         if img.size == (64, 32):
             img = legacy_to_modern(img)
+        if model == "auto":
+            model = detect_model(img)
         s = cls(size=img.size[0], model=model)
         s.img = img
         s.draw = ImageDraw.Draw(img)
@@ -314,5 +342,5 @@ def create(size: int = 64, model: str = "steve") -> Skin:
     return Skin(size=size, model=model)
 
 
-def load(path: str, model: str = "steve") -> Skin:
+def load(path: str, model: str = "auto") -> Skin:
     return Skin.load(path, model)

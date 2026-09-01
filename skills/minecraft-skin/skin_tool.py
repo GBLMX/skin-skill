@@ -12,18 +12,21 @@ Usage:
     python skin_tool.py render skin.png --outdir previews
     python skin_tool.py info skin.png
     python skin_tool.py flatten skin.png
+    python skin_tool.py open skin.png
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from skinlib.model import Skin, PARTS, LAYERS, FACES, parse_color, create, load
-from skinlib.shading import apply_shading
+from skinlib.shading import apply_shading, outline
 from skinlib.patterns import apply_pattern, PATTERNS
 from skinlib.sampling import sample_palette
 from skinlib.render import save_previews, render_3d
@@ -33,6 +36,8 @@ from skinlib.validate import validate_report
 from skinlib.poses import POSES
 from skinlib.decoration import apply_3d_decoration
 from skinlib.features import face, hair, band
+
+DEFAULT_BLOCKBENCH = os.environ.get("BLOCKBENCH", r"C:\Program Files\Blockbench\Blockbench.exe")
 
 
 def _cmd_create(a):
@@ -57,7 +62,7 @@ def _cmd_shading(a):
     c = parse_color(a.color)
     out = a.output or a.input
     apply_shading(s, a.part, c, layer=a.layer, style=a.style,
-                  noise=a.noise, noise_var=a.noise_var)
+                  noise=a.noise, noise_var=a.noise_var, seed=a.seed)
     s.save(out)
     print(f"shaded {a.part}/{a.layer} ({a.style}) -> {out}")
 
@@ -128,6 +133,20 @@ def _cmd_band(a):
     band(s, a.part, a.v0, a.v1, parse_color(a.color), layer=a.layer)
     s.save(out)
     print(f"band -> {out}")
+
+
+def _cmd_outline(a):
+    s = load(a.input, model=a.model)
+    out = a.output or a.input
+    outline(s, a.part, parse_color(a.color), layer=a.layer, width=a.width)
+    s.save(out)
+    print(f"outlined {a.part}/{a.layer} -> {out}")
+
+
+def _cmd_open(a):
+    exe = a.blockbench or DEFAULT_BLOCKBENCH
+    subprocess.Popen([exe, a.input])
+    print(f"opened {a.input} in Blockbench")
 
 
 def _cmd_sample(a):
@@ -210,7 +229,7 @@ def build_parser():
     pa.add_argument("--color", required=True)
     pa.add_argument("--face", choices=FACES, default=None)
     pa.add_argument("-o", "--output", default=None)
-    pa.add_argument("--model", choices=("steve", "alex"), default="steve")
+    pa.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     pa.set_defaults(func=_cmd_paint)
 
     sh = sub.add_parser("shading"); sh.add_argument("input")
@@ -220,8 +239,9 @@ def build_parser():
     sh.add_argument("--style", choices=("flat", "vertical", "cylindrical", "combined", "artistic"), default="combined")
     sh.add_argument("--noise", action="store_true")
     sh.add_argument("--noise-var", type=int, default=6)
+    sh.add_argument("--seed", type=int, default=0)
     sh.add_argument("-o", "--output", default=None)
-    sh.add_argument("--model", choices=("steve", "alex"), default="steve")
+    sh.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     sh.set_defaults(func=_cmd_shading)
 
     pt = sub.add_parser("pattern"); pt.add_argument("input")
@@ -235,7 +255,7 @@ def build_parser():
     pt.add_argument("--cell", type=int, default=4)
     pt.add_argument("--seed", type=int, default=0)
     pt.add_argument("-o", "--output", default=None)
-    pt.add_argument("--model", choices=("steve", "alex"), default="steve")
+    pt.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     pt.set_defaults(func=_cmd_pattern)
 
     t = sub.add_parser("template"); t.add_argument("name")
@@ -247,7 +267,7 @@ def build_parser():
     dec.add_argument("--jacket", default=None, help="jacket/zipper color (R,G,B)")
     dec.add_argument("--pants", default=None, help="pants hem color (R,G,B)")
     dec.add_argument("-o", "--output", default=None)
-    dec.add_argument("--model", choices=("steve", "alex"), default="steve")
+    dec.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     dec.set_defaults(func=_cmd_decorate)
 
     h = sub.add_parser("hair"); h.add_argument("input")
@@ -255,7 +275,7 @@ def build_parser():
     h.add_argument("--light", default=None, help="strand highlight (R,G,B)")
     h.add_argument("--dark", default=None, help="strand shadow (R,G,B)")
     h.add_argument("-o", "--output", default=None)
-    h.add_argument("--model", choices=("steve", "alex"), default="steve")
+    h.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     h.set_defaults(func=_cmd_hair)
 
     fa = sub.add_parser("face"); fa.add_argument("input")
@@ -263,7 +283,7 @@ def build_parser():
     fa.add_argument("--brows", default=None, help="brow color (R,G,B)")
     fa.add_argument("--mouth", default=None, help="mouth color (R,G,B)")
     fa.add_argument("-o", "--output", default=None)
-    fa.add_argument("--model", choices=("steve", "alex"), default="steve")
+    fa.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     fa.set_defaults(func=_cmd_face)
 
     b = sub.add_parser("band"); b.add_argument("input")
@@ -273,8 +293,21 @@ def build_parser():
     b.add_argument("--color", required=True)
     b.add_argument("--layer", choices=LAYERS, default="overlay")
     b.add_argument("-o", "--output", default=None)
-    b.add_argument("--model", choices=("steve", "alex"), default="steve")
+    b.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     b.set_defaults(func=_cmd_band)
+
+    ol = sub.add_parser("outline"); ol.add_argument("input")
+    ol.add_argument("--part", required=True, choices=PARTS)
+    ol.add_argument("--color", required=True)
+    ol.add_argument("--layer", choices=LAYERS, default="base")
+    ol.add_argument("--width", type=int, default=1)
+    ol.add_argument("-o", "--output", default=None)
+    ol.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
+    ol.set_defaults(func=_cmd_outline)
+
+    op = sub.add_parser("open"); op.add_argument("input")
+    op.add_argument("--blockbench", default=None, help="Blockbench.exe path")
+    op.set_defaults(func=_cmd_open)
 
     sm = sub.add_parser("sample"); sm.add_argument("input")
     sm.add_argument("--colors", type=int, default=6)
@@ -283,16 +316,16 @@ def build_parser():
     r = sub.add_parser("render"); r.add_argument("input")
     r.add_argument("--outdir", default="previews")
     r.add_argument("--scale", type=int, default=4)
-    r.add_argument("--model", choices=("steve", "alex"), default="steve")
+    r.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     r.set_defaults(func=_cmd_render)
 
     i = sub.add_parser("info"); i.add_argument("input")
-    i.add_argument("--model", choices=("steve", "alex"), default="steve")
+    i.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     i.set_defaults(func=_cmd_info)
 
     f = sub.add_parser("flatten"); f.add_argument("input")
     f.add_argument("-o", "--output", default=None)
-    f.add_argument("--model", choices=("steve", "alex"), default="steve")
+    f.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     f.set_defaults(func=_cmd_flatten)
 
     po = sub.add_parser("pose"); po.add_argument("input")
@@ -301,7 +334,7 @@ def build_parser():
     po.add_argument("--pitch", type=float, default=25.0)
     po.add_argument("--scale", type=int, default=8)
     po.add_argument("-o", "--output", default=None)
-    po.add_argument("--model", choices=("steve", "alex"), default="steve")
+    po.add_argument("--model", choices=("steve", "alex", "auto"), default="auto")
     po.set_defaults(func=_cmd_pose)
 
     v = sub.add_parser("validate"); v.add_argument("input")

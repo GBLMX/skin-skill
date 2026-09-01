@@ -110,11 +110,11 @@ _SHADING_STYLES = {
 
 def apply_shading(skin: Skin, part, base: Color, layer: str = "base",
                   style: str = "combined", noise: bool = False,
-                  noise_var: int = 6, **kwargs) -> Skin:
+                  noise_var: int = 6, seed: int = 0, **kwargs) -> Skin:
     """Apply a shading style to a part. Returns the skin for chaining."""
     if style not in _SHADING_STYLES:
         raise ValueError(f"style must be one of {sorted(_SHADING_STYLES)}")
     _SHADING_STYLES[style](skin, part, base, layer, **kwargs)
     if noise:
-        fabric_noise(skin, part, layer, variance=noise_var)
+        fabric_noise(skin, part, layer, variance=noise_var, seed=seed)
     return skin

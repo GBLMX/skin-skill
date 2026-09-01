@@ -30,6 +30,15 @@ PART_DIMS: Dict[str, Tuple[int, int, int]] = {
     "left_leg": (4, 12, 4),
 }
 
+
+def _part_dims(model: str) -> Dict[str, Tuple[int, int, int]]:
+    """Return body-part dimensions for the model (Alex arms are 3px slim)."""
+    dims = dict(PART_DIMS)
+    if model == "alex":
+        dims["right_arm"] = (3, 12, 4)
+        dims["left_arm"] = (3, 12, 4)
+    return dims
+
 # Part positions (center, in voxel units) relative to body center at (0,0,0).
 PART_ORIGIN: Dict[str, Tuple[int, int, int]] = {
     "head": (0, 28, 0),
@@ -68,9 +77,10 @@ def render_isometric(skin: Skin, view: str = "front",
         ("right_leg", (-5, 26)),
         ("left_leg", (5, 26)),
     ]
+    dims = _part_dims(skin.model)
     for part, (dx, dy) in layout:
         tex = _composite_face(skin, part, face)
-        w, h = PART_DIMS[part][0], PART_DIMS[part][1]
+        w, h = dims[part][0], dims[part][1]
         tex = tex.resize((w * s, h * s), Image.NEAREST)
         px = cx + int(dx * scale) - tex.width // 2
         py = cy + int(dy * scale) - tex.height // 2
@@ -119,8 +129,9 @@ def render_3d(skin: Skin, yaw: float = 45.0, pitch: float = 25.0,
 
     order = ["right_leg", "left_leg", "right_arm", "left_arm", "body", "head"]
     quads = []  # (depth, texture, [4 screen points])
+    dims = _part_dims(skin.model)
     for part in order:
-        w, h, d = PART_DIMS[part]
+        w, h, d = dims[part]
         ox, oy, oz = PART_ORIGIN[part]
         pp = part_pose.get(part, PartPose())
 

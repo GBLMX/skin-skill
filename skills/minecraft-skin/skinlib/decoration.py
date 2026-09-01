@@ -28,6 +28,7 @@ def hat(skin: Skin, color: Color, top_color: Optional[Color] = None,
     front (face) transparent. Optional weave alternates brightness for fabric.
     """
     top = top_color or color
+    s = skin.scale
     # top face: full with weave
     x, y, w, h = skin.region("head", "overlay", "top")
     for i in range(w):
@@ -37,27 +38,28 @@ def hat(skin: Skin, color: Color, top_color: Optional[Color] = None,
             else:
                 skin.img.putpixel((x + i, y + j), top)
 
-    # front/back/left/right: only upper rim (top 3 rows)
+    # front/back/left/right: only upper rim (top 3 logical rows)
     for face in ("front", "back", "left", "right"):
         x, y, w, h = skin.region("head", "overlay", face)
         for i in range(w):
-            for j in range(0, 3):
+            for j in range(0, 3 * s):
                 skin.img.putpixel((x + i, y + j), color)
     # front: a couple of highlight pixels (light reflection)
     x, y, w, h = skin.region("head", "overlay", "front")
-    skin.img.putpixel((x + 2, y + 1), colors.shade(color, 1.3))
-    skin.img.putpixel((x + w - 3, y + 1), colors.shade(color, 1.3))
+    skin.img.putpixel((x + 2 * s, y + 1 * s), colors.shade(color, 1.3))
+    skin.img.putpixel((x + w - 3 * s, y + 1 * s), colors.shade(color, 1.3))
     return skin
 
 
 def jacket_front(skin: Skin, color: Color, highlight: Optional[Color] = None) -> Skin:
     """Add a sparse jacket/front-chest design (like a logo or zipper)."""
     hi = highlight or colors.shade(color, 1.3)
+    s = skin.scale
     x, y, w, h = skin.region("body", "overlay", "front")
     # vertical zipper line at center, with highlight pixels
-    for j in range(3, 9):
+    for j in range(3 * s, 9 * s):
         skin.img.putpixel((x + w // 2, y + j), colors.shade(color, 0.7))
-        if j in (3, 5, 7):
+        if j in (3 * s, 5 * s, 7 * s):
             skin.img.putpixel((x + w // 2 + 1, y + j), hi)
     return skin
 

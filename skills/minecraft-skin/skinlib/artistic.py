@@ -14,8 +14,6 @@ The `artistic` style produces skins that look hand-drawn rather than flat-filled
 
 from __future__ import annotations
 
-from typing import Optional
-
 from . import colors
 from .model import Skin, Color, FACES
 
@@ -66,9 +64,3 @@ def artistic(skin: Skin, part, base: Color, layer: str = "base",
                         skin.img.putpixel((x + i, y + j), c)
 
     return skin
-
-
-def artistic_full(skin: Skin, part, base: Color, layer: str = "base",
-                  **kwargs) -> Skin:
-    """Alias: artistic with folder defaults."""
-    return artistic(skin, part, base, layer, **kwargs)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Tuple
+from typing import List, Tuple
 
 Color = Tuple[int, int, int, int]
 
@@ -53,15 +53,3 @@ def palette(c1: Color, c2: Color, c3: Color, steps: int) -> List[Color]:
     """Two-segment gradient c1 -> c2 -> c3."""
     half = steps // 2
     return gradient(c1, c2, half + 1)[:-1] + gradient(c2, c3, steps - half)
-
-
-def quantize(colors: Iterable[Color], n: int = 256) -> List[Color]:
-    """Reduce a list of colors to n representative ones (simple bucket)."""
-    # Not a full k-means; keeps order and dedups. Sufficient for skin usage.
-    seen = []
-    for c in colors:
-        if c not in seen:
-            seen.append(c)
-        if len(seen) >= n:
-            break
-    return seen

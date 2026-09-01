@@ -50,7 +50,7 @@ def border_trim(skin: Skin, part, fill: Color, trim: Color, layer: str = "base",
                 width: int = 1) -> Skin:
     for face in FACES:
         x, y, w, h = skin.region(part, layer, face)
-        skin.draw.rectangle((x, y, x + w, y + h), fill=fill)
+        skin.draw.rectangle((x, y, x + w - 1, y + h - 1), fill=fill)
         skin.draw.rectangle((x, y, x + w - 1, y + h - 1), outline=trim, width=width)
     return skin
 

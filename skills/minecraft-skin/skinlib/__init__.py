@@ -19,6 +19,7 @@ from .model import (
     SteveLayout,
     make_layout,
     legacy_to_modern,
+    detect_model,
     create,
     load,
     parse_color,
@@ -38,7 +39,7 @@ from .shading import (
     fabric_noise,
     outline,
 )
-from .artistic import artistic, artistic_full
+from .artistic import artistic
 from .decoration import (
     hat, jacket_front, pants_outline,
     add_highlights, add_shadows, apply_3d_decoration,
@@ -60,11 +61,11 @@ from .validate import validate, validate_report
 __all__ = [
     "Skin", "Color", "Part", "Layer", "Face",
     "PARTS", "LAYERS", "FACES",
-    "SteveLayout", "make_layout", "legacy_to_modern", "create", "load", "parse_color",
+    "SteveLayout", "make_layout", "legacy_to_modern", "detect_model", "create", "load", "parse_color",
     "mix", "shade", "gray", "blend", "gradient",
     "apply_shading", "cylindrical", "vertical_gradient", "combined",
     "fabric_noise", "outline",
-    "artistic", "artistic_full",
+    "artistic",
     "hat", "jacket_front", "pants_outline",
     "add_highlights", "add_shadows", "apply_3d_decoration",
     "face", "hair", "band",

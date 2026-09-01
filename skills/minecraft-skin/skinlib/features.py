@@ -123,9 +123,10 @@ def band(skin: Skin, part, v0: int, v1: int, color: Color,
     dark = dark or _darker(color, 40)
     for face in ("front", "back", "left", "right"):
         x, y, w, h = skin.region(part, layer, face)
-        for u in range(w):
+        lw, lh = w // skin.scale, h // skin.scale
+        for u in range(lw):
             for v in range(v0, v1 + 1):
-                if 0 <= v < h:
+                if 0 <= v < lh:
                     skin.pixel(part, layer, face, u, v,
                                dark if v == v1 else color)
     return skin

@@ -1,6 +1,6 @@
 ---
 name: minecraft-skin
-description: Create, edit, and render Minecraft player skins with full double-layer (hat/jacket/sleeve/pants) and Steve/Alex model support. Features realistic shading (gradient + cylindrical lighting + fabric noise), patterns, preset templates, reference-image color sampling, and 3D rendering. Use when the user wants to generate or customize Minecraft skin PNG files programmatically.
+description: "创建、编辑和渲染 Minecraft 玩家皮肤，支持完整的双层（帽子/外套/袖子/裤子）和 Steve/Alex 模型。特性包括真实着色（渐变 + 圆柱光照 + 布料噪点）、图案、预设模板、参考图像颜色采样和 3D 渲染。当用户想以编程方式生成或自定义 Minecraft 皮肤 PNG 文件时使用。"
 ---
 
 # Minecraft Skin Library
@@ -57,6 +57,7 @@ python skin_tool.py decorate skin.png --hat 200,30,30 --jacket 30,30,40 --pants 
 python skin_tool.py hair skin.png --color 198,196,190
 python skin_tool.py face skin.png --eyes 96,226,140
 python skin_tool.py band skin.png --part body --v0 9 --v1 10 --color 176,146,60
+python skin_tool.py outline skin.png --part body --color 0,0,0 --width 1
 
 # Sample a palette from a reference image
 python skin_tool.py sample character.png --colors 6
@@ -65,6 +66,7 @@ python skin_tool.py sample character.png --colors 6
 python skin_tool.py render skin.png --outdir previews
 python skin_tool.py info skin.png
 python skin_tool.py flatten skin.png
+python skin_tool.py open skin.png
 
 # Pose rendering & validation & palettes
 python skin_tool.py pose skin.png --pose walking
@@ -143,6 +145,15 @@ Legacy 64x32 skins are auto-converted to the modern 64x64 layout on load
 - Layers: `base` (inner), `overlay` (hat/jacket/sleeve/pants)
 - Faces: `front`, `right`, `top`, `bottom`, `back`, `left`
 
+## Models, Auto-detect & HD
+
+- Load commands default to `--model auto`: Steve (4px arms) vs Alex (3px slim
+  arms) is detected from the arm texture. Override with `--model steve` / `alex`;
+  `create` still defaults to `steve`.
+- HD 128x128 skins are fully supported: feature/decoration coordinates are
+  logical (64px grid) and scale automatically. Legacy 64x32 auto-converts.
+- Fabric-noise seed is deterministic via `--seed` (shading command).
+
 ## Examples
 
 See `examples/cao_alarak.py` for a full character skin (曹操 × 阿拉纳克 fusion)
@@ -159,3 +170,59 @@ Real skins bundled under `examples/` as style references:
 - `reference_gawrgura.png` — Gawr Gura (VTuber) character skin
 - `reference_pc_man.png` — 电脑人 (computer person) skin
 - `reference_sasuke.png` — 宇智波佐助 (Uchiha Sasuke) character skin
+
+## Blockbench Integration
+
+### Open in the desktop editor (manual tweaks)
+
+```bash
+python skin_tool.py open skin.png              # opens C:\Program Files\Blockbench\Blockbench.exe
+BLOCKBENCH=/path/to/Blockbench.exe python skin_tool.py open skin.png
+```
+
+### Drive Blockbench programmatically via MCP
+
+Blockbench can act as an MCP server (via `blockbench-mcp-plugin`), letting an
+AI agent drive it directly. With Blockbench running and the plugin loaded, pi
+connects at `http://localhost:3000/bb-mcp` (Streamable HTTP). Tools are the
+`blockbench_*` family. Full end-to-end recipe:
+`references/blockbench_mcp_workflow.md`. The three non-obvious steps:
+
+1. **`blockbench_create_project {format: "skin"}` creates an EMPTY project** —
+   no player model yet. Load the texture, then generate the model explicitly.
+2. **Load the texture** — `data` is a **file path** or a **`data:image/...` URL**,
+   never raw base64 (raw base64 is mis-parsed as a path → garbage texture name):
+   `blockbench_create_texture {name, width:64, height:64, data:"C:/path/skin.png"}`
+3. **Generate the 3D player model** — the step that is almost always missed;
+   without it the viewport stays empty:
+   `blockbench_risky_eval {code: 'Codecs.skin_model.rebuild("steve")'}`
+   - Variants: `"steve"` (4px arms) / `"alex"` (3px slim arms).
+   - `rebuild` **appends** — calling it twice duplicates the model. To rebuild
+     cleanly, clear first: `for (const g of [...Outliner.root]) g.remove();`
+
+A correct skin project shows 7 groups / 12 cubes (`Waist`, `Head`, `Body`,
+`Right Arm`, `Left Arm`, `Right Leg`, `Left Leg`, each base+layer). Verify with
+`blockbench_get_project_info` (counts) and `blockbench_list_outline` (tree).
+
+### Saving a .bbmodel project
+
+`Codecs.project.compile({})` returns a **JSON string**, not an object — write it
+directly (re-stringifying double-encodes the file):
+
+```js
+const data = Codecs.project.compile({});               // string
+await Blockbench.writeFile("E:/path/model.bbmodel", {content: data});
+```
+
+A skin-format `.bbmodel` stores `skin_model: "steve"` plus the texture as an
+embedded base64 `source` — **not** an `elements` array (the player model is
+regenerated from the built-in template on load), so the file is self-contained.
+
+### Pitfalls
+
+- `skin_tool.py open` spawns `Blockbench.exe` as a subprocess, which can open a
+  second instance and desync the MCP session. Prefer the MCP tools directly.
+- `blockbench_risky_eval` runs arbitrary JS via `eval()` in Blockbench's scope —
+  use it for inspection/manipulation the read-only tools (`get_project_info`,
+  `list_outline`, `list_textures`) don't expose (e.g. `Texture.all`,
+  `Group.all`, `Outliner.root`, `Codecs`, `Formats`, `Project`).
