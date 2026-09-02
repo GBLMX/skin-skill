@@ -51,6 +51,22 @@ render_3d(s, pose="walking").save("preview.png")
 `mottled` / `leathery`。材质 `apply_material()`：`cloth` / `leather` / `metal` /
 `bone` / `glow_crystal`。
 
+## 通用技法（跨主题可复用）
+
+从「死灵法师」项目六代迭代沉淀的通用经验，任何皮肤都适用：
+
+- **分层**：`base`=贴肉内层（皮肤/骷髅/露出的骨头），`overlay`=罩壳（帽/衣/护甲/3D 体积）
+- **环绕**：腰带/护腕/护膝/肋骨等配件要在 4 个侧面用相同 v 坐标画，才连成环
+- **配色纪律**：近黑不可读；每材质配亮/中/暗/深影 4 档；单一能量强调色（眼/符文）
+- **光影三原则**：高光朝上、阴影朝下、内陷加暗边
+- **骷髅脸**：深眼窝 + 倒三角鼻影 + 白骨下巴；枯骨非纯白（米黄 + 污垢 + 骨缝）
+- **非对称**：左右臂/腿故意不同，制造角色性格
+- **HD 工作流**：原生 128 用 `px`/`rect` 精细像素，64 下采样用 `BOX`
+- **挖洞（透明透内层）**：overlay 像素 Alpha=0 挖洞 → 透出 base 画好的骷髅/枯骨，
+  边缘描暗线 + 内层上沿暗/下沿亮 = 悬浮立体感
+
+完整心法、代码模板、常见坑 → `references/techniques.md`。
+
 **参考图源**：Noob / Herobrine 等标准 64×64 皮肤可在
 [The Skindex](https://www.minecraftskins.com/) 或 [NameMC](https://namemc.com/)
 搜索下载，用作算法训练与风格参考素材。本 skill 的 `examples/` 已内置
@@ -59,5 +75,6 @@ render_3d(s, pose="walking").save("preview.png")
 
 The full API lives in the library's `skinlib/__init__.py` and README; run
 `mc-skin --help` for the CLI. See `references/skin_layout.md` for the UV
-coordinate map, and `references/blockbench_mcp_workflow.md` for driving
-Blockbench via MCP.
+coordinate map, `references/techniques.md` for the design playbook（分层/环绕/
+配色/光影/骷髅/非对称/挖洞/HD 工作流）, and `references/blockbench_mcp_workflow.md`
+for driving Blockbench via MCP.
