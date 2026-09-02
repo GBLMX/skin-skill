@@ -1,12 +1,12 @@
 ---
 name: minecraft-skin
-description: "创建、编辑和渲染 Minecraft 玩家皮肤（薄适配层，包装 mc-skin Python 库）。先 pip install mc-skin，再用 Python API 或 mc-skin CLI。当用户想以编程方式生成或自定义 Minecraft 皮肤 PNG 时使用。"
+description: "创建、编辑、渲染 Minecraft 玩家皮肤 + 皮肤设计经验手册。含 mc-skin 库的 CLI/API 适配，以及沉淀的可复用设计技法（分层/环绕/配色纪律/光影三原则/骷髅脸/非对称/挖洞/HD 工作流）。当用户想编程生成或自定义皮肤 PNG，或需要皮肤美学/技法指导时使用。"
+type: tool
 ---
 
-# Minecraft Skin — pi skill adapter
+# Minecraft Skin — 皮肤生成 + 设计经验
 
-This skill is a thin adapter over the **`mc-skin` Python library**. The
-library is a standalone PyPI package (not pi-specific) — install it first:
+本 skill 是 **`mc-skin` Python 库**的适配层 + 皮肤设计经验手册。库是独立 PyPI 包（不绑定 pi）——先安装：
 
 ```bash
 pip install mc-skin
