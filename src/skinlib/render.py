@@ -150,29 +150,37 @@ def render_3d(skin: Skin, yaw: float = 45.0, pitch: float = 25.0,
                 x, y = x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a)
             return x + pp.dx, y + pp.dy, z + pp.dz
 
-        # corners relative to center
-        corners = []
-        for dx in (-w / 2, w / 2):
-            for dy in (-h / 2, h / 2):
-                for dz in (-d / 2, d / 2):
-                    lx, ly, lz = part_rot(dx, dy, dz)
-                    X, Y, Z = rot(ox + lx, oy + ly, oz + lz)
-                    corners.append((cx + X * scale, cy - Y * scale, Z))
+        # Java hat layer: overlay floats outside base (head +0.5, body/limbs +0.25)
+        # voxel units. Render base first, then the inflated overlay cube so the
+        # preview shows the real second-layer depth the game renders.
+        inflate = 0.5 if part == "head" else 0.25
+        for layer, f in (("base", 0.0), ("overlay", inflate)):
+            ww, hh, dd = w + 2 * f, h + 2 * f, d + 2 * f
+            # corners relative to center
+            corners = []
+            for dx in (-ww / 2, ww / 2):
+                for dy in (-hh / 2, hh / 2):
+                    for dz in (-dd / 2, dd / 2):
+                        lx, ly, lz = part_rot(dx, dy, dz)
+                        X, Y, Z = rot(ox + lx, oy + ly, oz + lz)
+                        corners.append((cx + X * scale, cy - Y * scale, Z))
 
-        for face, idxs in face_map.items():
-            tex = _composite_face(skin, part, face)
-            pts = [corners[i] for i in idxs]
-            # backface culling via view-space face normal (z <= 0 => facing away)
-            p0, p1, p2 = pts[0], pts[1], pts[2]
-            u = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
-            v = (p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])
-            n = (u[1] * v[2] - u[2] * v[1],
-                 u[2] * v[0] - u[0] * v[2],
-                 u[0] * v[1] - u[1] * v[0])
-            if n[2] <= 0:
-                continue
-            depth = sum(p[2] for p in pts) / 4.0
-            quads.append((depth, tex, pts))
+            for face, idxs in face_map.items():
+                tex = skin.face_image(part, layer, face)
+                if layer == "overlay" and tex.getbbox() is None:
+                    continue  # skip fully-transparent overlay faces
+                pts = [corners[i] for i in idxs]
+                # backface culling via view-space face normal (z <= 0 => facing away)
+                p0, p1, p2 = pts[0], pts[1], pts[2]
+                u = (p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2])
+                v = (p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2])
+                n = (u[1] * v[2] - u[2] * v[1],
+                     u[2] * v[0] - u[0] * v[2],
+                     u[0] * v[1] - u[1] * v[0])
+                if n[2] <= 0:
+                    continue
+                depth = sum(p[2] for p in pts) / 4.0
+                quads.append((depth, tex, pts))
 
     # Painter's algorithm: draw farthest faces first.
     quads.sort(key=lambda q: q[0])
