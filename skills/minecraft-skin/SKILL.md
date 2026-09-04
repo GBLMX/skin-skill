@@ -67,6 +67,11 @@ render_3d(s, pose="walking").save("preview.png")
   鼓起的配件画 overlay、贴肉画 base；渲染器须外扩 overlay 而非平铺
 - **挖洞（透明透内层）**：overlay 像素 Alpha=0 挖洞 → 透出 base 画好的骷髅/枯骨，
   边缘描暗线 + 内层上沿暗/下沿亮 = 悬浮立体感
+- **alpha 三规则**：base 透明=黑、overlay 半透明=看穿 bug（Bedrock 强制不透明），
+  可靠手段只有 alpha 0/255 二值
+- **色阶消散**：半透明不可靠 → 用不透明色阶渐变（实体色→幽灵色）模拟消散/幽灵化
+- **3D Skin Layers 友好**：64 原生 + overlay 配件四面环绕完整 → mod extrud 成真 3D 立体块
+- **头发 3D**：双层发（base 贴肉 + overlay 浮起）+ 发梢渐深 + 发丝透明缝分离；帽子 overlay 不包死
 
 完整心法、代码模板、常见坑 → `references/techniques.md`。
 
