@@ -150,3 +150,24 @@ def apply_style(skin: Skin, part, base: Color, profile: str,
     style = p.pop("style")
     apply_shading(skin, part, base, layer, style=style, seed=seed, **p)
     return skin
+
+
+def apply_fade(skin: Skin, part, v0: int, v1: int, colors,
+               faces=None, layer: str = "base") -> Skin:
+    """在 [v0, v1) 行画不透明色阶渐变（消散/渐深，见 techniques §12）。
+
+    逐行应用 colors 色阶（第 v 行用 colors[v-v0]，越界取最后一个），模拟
+    「实体 → 幽灵/阴影」的淡出。玩家皮肤做不了半透明，用色阶台阶模拟。
+
+    用法：双腿小腿消散
+        apply_fade(s, "right_leg", 9, 12, [GHOST_3, GHOST_2, GHOST_1])
+    """
+    faces = faces or ("front", "back", "left", "right")
+    for v in range(v0, v1):
+        color = colors[min(v - v0, len(colors) - 1)]
+        for face in faces:
+            b = skin.box(part, layer, face)
+            lw = b.w // skin.scale
+            for u in range(lw):
+                skin.pixel(part, layer, face, u, v, color)
+    return skin

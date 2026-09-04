@@ -291,6 +291,23 @@ class Skin:
         x, y, w, h = self.region(part, layer, face)
         return self.img.getpixel((x + u * self.scale, y + v * self.scale))
 
+    def dump(self, part: Part, face: Face = "front",
+             layers: Tuple[Layer, ...] = ("base", "overlay")) -> None:
+        """逐 v 打印 part/face 的 base/overlay 像素，调试层次冲突（techniques §15）。
+
+        透明像素显示为 ``·``，不透明显示 R 通道值（3 位对齐），base/overlay 两行
+        并排对比，一眼看出谁遮了谁。
+        """
+        b = self.box(part, "base", face)
+        lw, lh = b.w // self.scale, b.h // self.scale
+        u = lw // 2
+        for layer in layers:
+            cells = []
+            for v in range(lh):
+                c = self.get_pixel(part, layer, face, u, v)
+                cells.append(" · " if c[3] == 0 else f"{c[0]:3d}")
+            print(f"{part}/{layer}/{face}: " + " ".join(cells))
+
     # -- face / part painting ----------------------------------------------
     def paint_face(self, part: Part, layer: Layer, face: Face, color):
         x, y, w, h = self.region(part, layer, face)

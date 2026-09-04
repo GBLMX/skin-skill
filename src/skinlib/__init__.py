@@ -35,6 +35,7 @@ from .colors import (
 from .shading import (
     apply_shading,
     apply_style,
+    apply_fade,
     STYLE_PROFILES,
     cylindrical,
     vertical_gradient,
@@ -87,7 +88,7 @@ __all__ = [
     "SteveLayout", "make_layout", "legacy_to_modern", "detect_model",
     "strip_matte", "create", "load", "parse_color",
     "mix", "shade", "gray", "blend", "gradient",
-    "apply_shading", "apply_style", "STYLE_PROFILES", "cylindrical", "vertical_gradient", "combined",
+    "apply_shading", "apply_style", "apply_fade", "STYLE_PROFILES", "cylindrical", "vertical_gradient", "combined",
     "fabric_noise", "outline",
     "artistic",
     "hat", "jacket_front", "pants_outline",
