@@ -31,7 +31,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict
 
-from .model import Skin, parse_color
+from .colors import parse_color
+from .skin import Skin
 from .shading import apply_shading, outline
 from .patterns import apply_pattern
 from .materials import apply_material
@@ -204,55 +205,114 @@ def _crepr(v: Any) -> str:
     return repr(tuple(_col(v)))
 
 
+def _emit_shading(p: dict) -> str:
+    return (f'apply_shading(s, {p["part"]!r}, {_crepr(p["color"])}, '
+            f'{p.get("layer", "base")!r}, style={p.get("style", "combined")!r}, '
+            f'noise={p.get("noise", False)!r}, seed={p.get("seed", 0)!r})')
+
+
+def _emit_material(p: dict) -> str:
+    color = f', color={_crepr(p["color"])}' if p.get("color") else ""
+    return (f'apply_material(s, {p["part"]!r}, {p["material"]!r}'
+            f'{color}, layer={p.get("layer", "base")!r})')
+
+
+def _emit_pattern(p: dict) -> str:
+    name = p["pattern"]
+    layer = p.get("layer", "base")
+    if name == "camouflage":
+        palette = ", ".join(_crepr(c) for c in p.get("palette", []))
+        return (f'apply_pattern(s, "camouflage", [{palette}], part={p["part"]!r}, '
+                f'layer={layer!r}, seed={p.get("seed", 0)!r})')
+    if name == "stripes":
+        return (f'apply_pattern(s, "stripes", {p["part"]!r}, {_crepr(p["c1"])}, '
+                f'{_crepr(p["c2"])}, layer={layer!r}, '
+                f'direction={p.get("direction", "vertical")!r}, '
+                f'width={p.get("width", 2)!r})')
+    if name == "checker":
+        return (f'apply_pattern(s, "checker", {p["part"]!r}, {_crepr(p["c1"])}, '
+                f'{_crepr(p["c2"])}, layer={layer!r}, cell={p.get("cell", 4)!r})')
+    if name == "border_trim":
+        return (f'apply_pattern(s, "border_trim", {p["part"]!r}, {_crepr(p["c1"])}, '
+                f'{_crepr(p["c2"])}, layer={layer!r}, width={p.get("width", 1)!r})')
+    raise ValueError(f"unknown pattern {name!r}")
+
+
+def _emit_overlay(p: dict) -> str:
+    color = f', color={_crepr(p["color"])}' if p.get("color") else ""
+    return (f'apply_overlay(s, {p["part"]!r}, {p["overlay"]!r}'
+            f'{color}, layer={p.get("layer", "base")!r}, seed={p.get("seed", 0)!r})')
+
+
+def _emit_decorate(p: dict) -> str:
+    args = []
+    for k in ("hat", "jacket", "pants"):
+        if p.get(k):
+            args.append(f"{k}_color={_crepr(p[k])}")
+    return "apply_3d_decoration(s, " + ", ".join(args) + ")"
+
+
+def _emit_face(p: dict) -> str:
+    # Recipe keys map to face() parameter names (eyes -> eye_color, brows -> brow_color).
+    args = []
+    for k, param in (("eyes", "eye_color"), ("brows", "brow_color"), ("mouth", "mouth_color")):
+        if p.get(k):
+            args.append(f"{param}={_crepr(p[k])}")
+    return "face(s, " + ", ".join(args) + ")"
+
+
+def _emit_hair(p: dict) -> str:
+    args = [f"{_crepr(p['color'])}"]
+    for k in ("light", "dark"):
+        if p.get(k):
+            args.append(f"{k}={_crepr(p[k])}")
+    return "hair(s, " + ", ".join(args) + ")"
+
+
+def _emit_band(p: dict) -> str:
+    return (f'band(s, {p["part"]!r}, {p["v0"]!r}, {p["v1"]!r}, {_crepr(p["color"])}, '
+            f'layer={p.get("layer", "overlay")!r})')
+
+
+def _emit_outline(p: dict) -> str:
+    return (f'outline(s, {p["part"]!r}, {_crepr(p["color"])}, '
+            f'layer={p.get("layer", "base")!r}, width={p.get("width", 1)!r})')
+
+
+def _emit_pixel(p: dict) -> str:
+    return (f's.pixel({p["part"]!r}, {p.get("layer", "base")!r}, {p["face"]!r}, '
+            f'{p["u"]!r}, {p["v"]!r}, {_crepr(p["color"])})')
+
+
+def _emit_paint(p: dict) -> str:
+    if p.get("face"):
+        return (f's.paint_face({p["part"]!r}, {p.get("layer", "base")!r}, '
+                f'{p["face"]!r}, {_crepr(p["color"])})')
+    return (f's.paint_part({p["part"]!r}, {_crepr(p["color"])}, '
+            f'{p.get("layer", "base")!r})')
+
+
+_EMITTERS: Dict[str, Callable[[dict], str]] = {
+    "shading": _emit_shading,
+    "material": _emit_material,
+    "pattern": _emit_pattern,
+    "overlay": _emit_overlay,
+    "decorate": _emit_decorate,
+    "face": _emit_face,
+    "hair": _emit_hair,
+    "band": _emit_band,
+    "outline": _emit_outline,
+    "pixel": _emit_pixel,
+    "paint": _emit_paint,
+}
+
+
 def _emit(step: dict) -> str:
     op = step["op"]
-    p = step
-    if op == "shading":
-        return (f'apply_shading(s, {p["part"]!r}, {_crepr(p["color"])}, '
-                f'{p.get("layer", "base")!r}, style={p.get("style", "combined")!r}, '
-                f'noise={p.get("noise", False)!r}, seed={p.get("seed", 0)!r})')
-    if op == "material":
-        color = f', color={_crepr(p["color"])}' if p.get("color") else ""
-        return (f'apply_material(s, {p["part"]!r}, {p["material"]!r}'
-                f'{color}, layer={p.get("layer", "base")!r})')
-    if op == "overlay":
-        color = f', color={_crepr(p["color"])}' if p.get("color") else ""
-        return (f'apply_overlay(s, {p["part"]!r}, {p["overlay"]!r}'
-                f'{color}, layer={p.get("layer", "base")!r}, seed={p.get("seed", 0)!r})')
-    if op == "decorate":
-        args = []
-        for k in ("hat", "jacket", "pants"):
-            if p.get(k):
-                args.append(f"{k}_color={_crepr(p[k])}")
-        return "apply_3d_decoration(s, " + ", ".join(args) + ")"
-    if op == "face":
-        args = []
-        for k in ("eyes", "brows", "mouth"):
-            if p.get(k):
-                args.append(f"{k}_color={_crepr(p[k])}")
-        return "face(s, " + ", ".join(args) + ")"
-    if op == "hair":
-        args = [f"{_crepr(p['color'])}"]
-        for k in ("light", "dark"):
-            if p.get(k):
-                args.append(f"{k}={_crepr(p[k])}")
-        return "hair(s, " + ", ".join(args) + ")"
-    if op == "band":
-        return (f'band(s, {p["part"]!r}, {p["v0"]!r}, {p["v1"]!r}, {_crepr(p["color"])}, '
-                f'layer={p.get("layer", "overlay")!r})')
-    if op == "outline":
-        return (f'outline(s, {p["part"]!r}, {_crepr(p["color"])}, '
-                f'layer={p.get("layer", "base")!r}, width={p.get("width", 1)!r})')
-    if op == "pixel":
-        return (f's.pixel({p["part"]!r}, {p.get("layer", "base")!r}, {p["face"]!r}, '
-                f'{p["u"]!r}, {p["v"]!r}, {_crepr(p["color"])})')
-    if op == "paint":
-        if p.get("face"):
-            return (f's.paint_face({p["part"]!r}, {p.get("layer", "base")!r}, '
-                    f'{p["face"]!r}, {_crepr(p["color"])})')
-        return (f's.paint_part({p["part"]!r}, {_crepr(p["color"])}, '
-                f'{p.get("layer", "base")!r})')
-    raise ValueError(f"unknown op {op!r}")
+    emitter = _EMITTERS.get(op)
+    if emitter is None:
+        raise ValueError(f"unknown op {op!r}; choices: {sorted(_EMITTERS)}")
+    return emitter(step)
 
 
 def recipe_to_python(recipe) -> str:
@@ -263,7 +323,7 @@ def recipe_to_python(recipe) -> str:
 
     lines = [
         "from skinlib import (Skin, apply_shading, apply_material, apply_overlay,",
-        "    apply_3d_decoration, face, hair, band, outline)",
+        "    apply_3d_decoration, apply_pattern, face, hair, band, outline)",
         "",
     ]
     if recipe.get("base"):

@@ -5,6 +5,7 @@ import json
 import pytest
 
 from skinlib import Skin, generate_from_recipe, recipe_to_python
+from skinlib.recipe import OPS, _EMITTERS
 
 
 def test_generate_from_recipe_basic():
@@ -76,3 +77,28 @@ def test_recipe_full_pipeline(tmp_path):
     out = tmp_path / "full.png"
     s.save(str(out))
     assert out.exists()
+
+
+def test_emitter_keys_match_ops():
+    assert set(_EMITTERS) == set(OPS)
+
+
+def test_recipe_to_python_pattern_ops_run_identically():
+    recipe = {
+        "size": 64,
+        "model": "steve",
+        "steps": [
+            {"op": "pattern", "pattern": "stripes", "part": "body",
+             "c1": "#223344", "c2": "#556677",
+             "direction": "horizontal", "width": 3},
+            {"op": "pattern", "pattern": "camouflage", "part": "head",
+             "palette": ["#3b2f23", "#6b5a41", "#8a7a52"], "seed": 7},
+        ],
+    }
+    code = recipe_to_python(recipe)
+    assert 'apply_pattern(s, "stripes"' in code
+    assert 'apply_pattern(s, "camouflage"' in code
+    expected = generate_from_recipe(recipe)
+    ns = {}
+    exec(code, ns)
+    assert ns["s"].img.tobytes() == expected.img.tobytes()
