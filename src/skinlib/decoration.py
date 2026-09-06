@@ -14,7 +14,8 @@ from __future__ import annotations
 from typing import Optional
 
 from . import colors
-from .model import Skin, Color, FACES
+from .model import Color, FACES
+from .skin import Skin
 
 
 # ---------------------------------------------------------------------------

@@ -17,7 +17,9 @@ from typing import Dict, Optional, Tuple
 
 from . import colors
 from ._noise import Noise2D
-from .model import Skin, Color, FACES
+from ._raster import transform
+from .model import Color
+from .skin import Skin
 from .shading import apply_shading, fabric_noise
 
 
@@ -83,70 +85,40 @@ MATERIALS: Dict[str, Material] = {
 # ---------------------------------------------------------------------------
 # Texture / highlight passes
 # ---------------------------------------------------------------------------
-def _clamp_add(px: Color, d: int) -> Color:
-    return (
-        max(0, min(255, px[0] + d)),
-        max(0, min(255, px[1] + d)),
-        max(0, min(255, px[2] + d)),
-        px[3],
-    )
-
-
 def noise_grain(skin: Skin, part, layer: str = "base",
                 scale: float = 4.0, variance: int = 6, seed: int = 0) -> Skin:
     """Add deterministic Perlin/Simplex grain to a part (natural texture)."""
     noise = Noise2D(seed)
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        for i in range(w):
-            for j in range(h):
-                px = skin.img.getpixel((x + i, y + j))
-                if px[3] == 0:
-                    continue
-                n = noise.noise2(i / scale, j / scale)  # [-1, 1]
-                d = int(round(n * variance))
-                skin.img.putpixel((x + i, y + j), _clamp_add(px, d))
-    return skin
+    return transform(
+        skin, part, layer,
+        lambda i, j, px, w, h, face: colors.add_rgb(
+            px, int(round(noise.noise2(i / scale, j / scale) * variance))))
 
 
 def specular_streak(skin: Skin, part, base: Color, layer: str = "base",
                     strength: float = 0.5) -> Skin:
     """Add a vertical metallic highlight streak down each face's center."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
+    def op(i: int, j: int, px: Color, w: int, h: int, face: str) -> Color:
         mid = w // 2
-        for j in range(h):
-            if skin.img.getpixel((x + mid, y + j))[3] == 0:
-                continue
-            skin.img.putpixel((x + mid, y + j), colors.shade(base, 1.0 + strength))
-        for off in (mid - 1, mid + 1):
-            if 0 <= off < w:
-                for j in range(h):
-                    if skin.img.getpixel((x + off, y + j))[3] == 0:
-                        continue
-                    skin.img.putpixel((x + off, y + j),
-                                      colors.shade(base, 1.0 + strength * 0.5))
-    return skin
+        if i == mid:
+            return colors.shade(base, 1.0 + strength)
+        if i in (mid - 1, mid + 1):
+            return colors.shade(base, 1.0 + strength * 0.5)
+        return px
+    return transform(skin, part, layer, op)
 
 
 def glow_center(skin: Skin, part, base: Color, layer: str = "base",
                 strength: float = 0.6) -> Skin:
     """Add an emissive center that fades toward the edges (crystal/energy)."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
+    def op(i: int, j: int, px: Color, w: int, h: int, face: str) -> Color:
         midx = (w - 1) / 2
         midy = (h - 1) / 2
-        for i in range(w):
-            for j in range(h):
-                px = skin.img.getpixel((x + i, y + j))
-                if px[3] == 0:
-                    continue
-                dx = abs(i - midx) / (midx or 1)
-                dy = abs(j - midy) / (midy or 1)
-                dist = max(dx, dy)
-                skin.img.putpixel((x + i, y + j),
-                                  colors.shade(base, 1.0 + strength * (1.0 - dist)))
-    return skin
+        dx = abs(i - midx) / (midx or 1)
+        dy = abs(j - midy) / (midy or 1)
+        dist = max(dx, dy)
+        return colors.shade(base, 1.0 + strength * (1.0 - dist))
+    return transform(skin, part, layer, op)
 
 
 # ---------------------------------------------------------------------------

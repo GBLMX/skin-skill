@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .model import Skin, Color
+from .model import Color
+from .skin import Skin
 
 
 def _lighter(c: Color, d: int = 30) -> Color:

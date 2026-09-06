@@ -8,7 +8,6 @@ Public API (exported intentionally):
 from __future__ import annotations
 
 from .model import (
-    Skin,
     Color,
     Part,
     Layer,
@@ -18,12 +17,16 @@ from .model import (
     FACES,
     SteveLayout,
     make_layout,
+)
+from .skin import (
+    Skin,
+    create,
+    load,
+)
+from .transforms import (
     legacy_to_modern,
     detect_model,
     strip_matte,
-    create,
-    load,
-    parse_color,
 )
 from .colors import (
     mix,
@@ -31,6 +34,7 @@ from .colors import (
     gray,
     blend,
     gradient,
+    parse_color,
 )
 from .shading import (
     apply_shading,
@@ -108,4 +112,4 @@ __all__ = [
     "generate_from_recipe", "recipe_to_python", "OPS",
 ]
 
-__version__ = "3.2.0"
+__version__ = "3.3.0"

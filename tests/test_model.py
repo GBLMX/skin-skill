@@ -5,9 +5,9 @@ from PIL import Image
 
 from skinlib import Skin, create, parse_color
 from skinlib.model import (
-    SteveLayout, make_layout, detect_model, legacy_to_modern, strip_matte,
-    PARTS, LAYERS, FACES,
+    SteveLayout, make_layout, PARTS, LAYERS, FACES,
 )
+from skinlib.transforms import detect_model, legacy_to_modern, strip_matte
 
 
 def test_layout_has_all_regions():

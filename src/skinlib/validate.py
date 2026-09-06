@@ -15,7 +15,8 @@ from typing import List, Tuple
 
 from PIL import Image
 
-from .model import Skin, PARTS, FACES, make_layout
+from .model import PARTS, FACES
+from .skin import Skin
 
 
 def validate(path: str) -> List[Tuple[str, str]]:
@@ -29,7 +30,7 @@ def validate(path: str) -> List[Tuple[str, str]]:
         return issues
     if img.size == (64, 32):
         issues.append(("warn", "legacy 64x32 format (no overlay layer)"))
-        from .model import legacy_to_modern
+        from .transforms import legacy_to_modern
         img = legacy_to_modern(img)
 
     skin = Skin(size=img.size[0])

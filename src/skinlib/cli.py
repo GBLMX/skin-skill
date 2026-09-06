@@ -23,7 +23,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .model import Skin, PARTS, LAYERS, FACES, parse_color, create, load
+from .colors import parse_color
+from .model import PARTS, LAYERS, FACES
+from .skin import Skin, create, load
 from .shading import apply_shading, outline
 from .patterns import apply_pattern, PATTERNS
 from .sampling import sample_palette

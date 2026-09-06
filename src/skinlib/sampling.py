@@ -54,16 +54,3 @@ def dominant_colors(path: str, n: int = 8,
 def sample_palette(path: str, n: int = 8) -> List[Color]:
     """Alias for dominant_colors; returns a palette of n RGBA colors."""
     return dominant_colors(path, n)
-
-
-def average_color(path: str) -> Color:
-    """Return the average opaque color of an image."""
-    img = Image.open(path).convert("RGBA")
-    pixels = [px[:3] for px in img.getdata() if px[3] > 128]
-    if not pixels:
-        return (0, 0, 0, 255)
-    n = len(pixels)
-    r = sum(p[0] for p in pixels) // n
-    g = sum(p[1] for p in pixels) // n
-    b = sum(p[2] for p in pixels) // n
-    return (r, g, b, 255)

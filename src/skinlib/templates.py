@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .model import Skin
+from .skin import Skin
 from .shading import apply_shading, apply_style
 from .materials import apply_material
 from .features import face, band

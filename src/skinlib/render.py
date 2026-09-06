@@ -13,7 +13,8 @@ from typing import Dict, Tuple
 
 from PIL import Image
 
-from .model import Skin, Box, PARTS
+from .model import PARTS
+from .skin import Skin
 from .poses import get_pose, PartPose
 
 

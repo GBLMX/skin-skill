@@ -3,91 +3,101 @@
 Principles extracted from real skin templates: vertical light gradient,
 cylindrical edge-darkening (3D illusion), and fabric noise. All functions
 operate on a Skin in place and return it for chaining.
+
+``combined`` and ``artistic`` are the same shading engine — cylindrical
+edge-darkening times a vertical gradient, with ``artistic`` adding an
+optional collar highlight and fabric folds. One internal engine
+(``_artistic_engine``) drives both so the two algorithms cannot drift.
 """
 
 from __future__ import annotations
 
 import random
-from typing import Optional
 
 from . import colors
-from .model import Skin, Color, FACES, PARTS
+from ._raster import cols, pixels, rows, transform
+from .model import Color, FACES
+from .skin import Skin
 
 
 def vertical_gradient(skin: Skin, part, c1: Color, c2: Color,
                       layer: str = "base") -> Skin:
     """Fill a part's faces with a top->bottom gradient."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        for j in range(h):
-            c = colors.mix(c1, c2, j / (h - 1 or 1))
-            skin.draw.line((x, y + j, x + w - 1, y + j), fill=c)
-    return skin
+    return rows(skin, part, layer,
+                lambda j, w, h, face: colors.mix(c1, c2, j / (h - 1 or 1)))
 
 
 def cylindrical(skin: Skin, part, base: Color, layer: str = "base",
                 edge: float = 0.75, center: float = 1.15) -> Skin:
     """Cylindrical lighting: edges dark, center light (3D tube illusion)."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        mid = (w - 1) / 2
-        for i in range(w):
-            dist = abs(i - mid) / (mid or 1)
-            factor = center - (center - edge) * dist
-            c = colors.shade(base, factor)
-            skin.draw.line((x + i, y, x + i, y + h - 1), fill=c)
-    return skin
+    return cols(skin, part, layer,
+                lambda i, w, h, face: colors.shade(base, _hf(i, w, edge, center)))
+
+
+def _hf(i: int, w: int, edge: float, center: float) -> float:
+    """Horizontal falloff factor at column i of a w-wide face."""
+    mid = (w - 1) / 2
+    dist = abs(i - mid) / (mid or 1)
+    return center - (center - edge) * dist
+
+
+def _artistic_engine(skin: Skin, part, base: Color, layer: str = "base",
+                     *, edge: float, center: float,
+                     v_top: float, v_bottom: float,
+                     collar: bool, folds: bool) -> Skin:
+    """Shared combined/artistic engine: cylindrical x vertical gradient.
+
+    Per physical pixel (i, j): hf from the horizontal falloff, vf from the
+    vertical gradient, factor = hf * vf. ``collar`` adds a bright band near
+    the top (factor clamped at 1.1 before shading, mirroring the historic
+    artistic style); ``folds`` darkens three mid-height rows by a second
+    shaded pass (preserving the original double rounding).
+    """
+    def color_for(i: int, j: int, w: int, h: int, face: str):
+        hf = _hf(i, w, edge, center)
+        t = j / (h - 1 or 1)
+        vf = v_top + (v_bottom - v_top) * t
+        factor = hf * vf
+        if collar and t < 0.15:
+            factor = min(1.1, factor + 0.25 * (1 - t / 0.15))
+        c = colors.shade(base, factor)
+        if folds and 0 < i < w - 1 and c[3] > 0:
+            # Historic behavior: each fold band darkens by 0.75 in turn. On
+            # short faces several bands collapse to the same row, so that row
+            # is shaded once per collided band — preserve that multiplicity.
+            for t in (0.35, 0.5, 0.65):
+                if j == int(t * (h - 1)):
+                    c = colors.shade(c, 0.75)
+        return c
+    return pixels(skin, part, layer, color_for)
 
 
 def combined(skin: Skin, part, base: Color, layer: str = "base",
              edge: float = 0.75, center: float = 1.15,
              v_top: float = 0.9, v_bottom: float = 1.1) -> Skin:
     """Combined gradient + cylindrical shading (most realistic)."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        mid = (w - 1) / 2
-        for i in range(w):
-            dist = abs(i - mid) / (mid or 1)
-            hf = center - (center - edge) * dist
-            for j in range(h):
-                t = j / (h - 1 or 1)
-                vf = v_top + (v_bottom - v_top) * t
-                c = colors.shade(base, hf * vf)
-                skin.img.putpixel((x + i, y + j), c)
-    return skin
+    return _artistic_engine(skin, part, base, layer, edge=edge, center=center,
+                            v_top=v_top, v_bottom=v_bottom,
+                            collar=False, folds=False)
 
 
 def fabric_noise(skin: Skin, part, layer: str = "base",
                  variance: int = 6, seed: int = 0) -> Skin:
     """Add subtle per-pixel noise (cloth texture)."""
     rng = random.Random(seed)
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        for i in range(w):
-            for j in range(h):
-                px = skin.img.getpixel((x + i, y + j))
-                if px[3] == 0:
-                    continue
-                d = rng.randint(-variance, variance)
-                skin.img.putpixel(
-                    (x + i, y + j),
-                    (max(0, min(255, px[0] + d)),
-                     max(0, min(255, px[1] + d)),
-                     max(0, min(255, px[2] + d)),
-                     px[3]))
-    return skin
+    return transform(
+        skin, part, layer,
+        lambda i, j, px, w, h, face: colors.add_rgb(px, rng.randint(-variance, variance)))
 
 
 def outline(skin: Skin, part, color: Color, layer: str = "base",
             width: int = 1) -> Skin:
     """Draw a border around each face of a part."""
-    for face in FACES:
-        x, y, w, h = skin.region(part, layer, face)
-        for i in range(w):
-            for j in range(h):
-                if i < width or i >= w - width or j < width or j >= h - width:
-                    skin.img.putpixel((x + i, y + j), color)
-    return skin
+    def color_for(i: int, j: int, w: int, h: int, face: str):
+        if i < width or i >= w - width or j < width or j >= h - width:
+            return color
+        return None
+    return pixels(skin, part, layer, color_for)
 
 
 # ---------------------------------------------------------------------------

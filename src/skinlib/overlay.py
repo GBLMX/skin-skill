@@ -15,7 +15,8 @@ import random
 from typing import Callable, Optional
 
 from . import colors
-from .model import Skin, Color, FACES
+from .model import Color, FACES
+from .skin import Skin
 
 # A mask decides, for each logical (face, u, v) of a part, whether an overlay
 # applies there. ``None`` means "everywhere".
