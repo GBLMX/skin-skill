@@ -2,7 +2,7 @@
 
 Every shading / pattern / grain pass used to hand-write the same skeleton::
 
-    for face in FACES:
+    for face in canvas_faces(skin):
         x, y, w, h = skin.region(part, layer, face)
         for i in range(w):
             for j in range(h):
@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Optional, Tuple
 
-from .model import FACES
+from .model import canvas_faces
 from .skin import Skin
 
 Face = str
@@ -36,15 +36,19 @@ PxTransform = Callable[[int, int, Color, int, int, str], Color]
 
 
 def face_boxes(skin: Skin, part: str, layer: str = "base",
-               faces: Iterable[str] = FACES):
-    """Yield (face, x, y, w, h) physical regions for part/layer faces."""
-    for face in faces:
+               faces: Optional[Iterable[str]] = None):
+    """Yield (face, x, y, w, h) physical regions for part/layer faces.
+
+    ``faces=None`` (the default) means "every face this canvas has", i.e.
+    ``canvas_faces(skin)`` — six for a skin, fewer for a standalone texture.
+    """
+    for face in (canvas_faces(skin) if faces is None else faces):
         x, y, w, h = skin.region(part, layer, face)
         yield face, x, y, w, h
 
 
 def rows(skin: Skin, part: str, layer: str, row_color: RowColor,
-         faces: Iterable[str] = FACES) -> Skin:
+         faces: Optional[Iterable[str]] = None) -> Skin:
     """Paint each face row-by-row; ``row_color(j, w, h, face)`` gives color.
 
     ``None`` skips that row. Byte-equivalent to drawing a full-width
@@ -61,7 +65,7 @@ def rows(skin: Skin, part: str, layer: str, row_color: RowColor,
 
 
 def cols(skin: Skin, part: str, layer: str, col_color: RowColor,
-         faces: Iterable[str] = FACES) -> Skin:
+         faces: Optional[Iterable[str]] = None) -> Skin:
     """Paint each face column-by-column; ``col_color(i, w, h, face)``."""
     for face, x, y, w, h in face_boxes(skin, part, layer, faces):
         for i in range(w):
@@ -74,7 +78,7 @@ def cols(skin: Skin, part: str, layer: str, col_color: RowColor,
 
 
 def pixels(skin: Skin, part: str, layer: str, color_for: PxColor,
-           faces: Iterable[str] = FACES) -> Skin:
+           faces: Optional[Iterable[str]] = None) -> Skin:
     """Paint every pixel of each face with ``color_for(i, j, w, h, face)``.
 
     ``None`` skips the write (transparent areas stay untouched). Single-pass
@@ -90,7 +94,7 @@ def pixels(skin: Skin, part: str, layer: str, color_for: PxColor,
 
 
 def transform(skin: Skin, part: str, layer: str, op: PxTransform,
-              faces: Iterable[str] = FACES) -> Skin:
+              faces: Optional[Iterable[str]] = None) -> Skin:
     """Read-modify-write each **opaque** pixel: ``op(i, j, px, w, h, face)``.
 
     Transparent pixels are left alone (checked before calling ``op``).

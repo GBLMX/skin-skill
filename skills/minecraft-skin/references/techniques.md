@@ -1,6 +1,7 @@
 # 皮肤设计经验手册（通用技法）
 
-> 从「死灵法师」项目六代迭代（v1→v2→v3→v4→v4.1→v4.2→v4.5）沉淀的通用经验。
+> 从「死灵法师」项目多代迭代（v1→…→v5.3，以及幽匿主题版 / 披风配色统一 / 服装提亮）
+> 沉淀的通用经验。
 > 这些不是某个主题专属，而是任何 Minecraft 皮肤都适用的**可复用心法**。
 > 配合 `skin_layout.md`（UV 坐标）和 SKILL.md 的「风格基因」表一起读。
 
@@ -79,6 +80,9 @@ for face in SD:
 6. **强调色要和主体拉开色相**：发光/能量色（眼/符文）不能和袍色同色相——
    蓝紫袍配青、红袍配橙火（不是正红）、绿袍配黄绿（不是正绿），否则发光「糊」进主体。
    做配色变体时最常踩：换主体色时，能量色要跟着换到**相邻色相**，不是同色相的亮版。
+
+> 要提亮近黑、或统一两套配色的色差时，**先量再改** —— 见 §16（配色测量与统一）
+> 和 §17（服装提亮）：这两件事都有实测出来的坑，凭手感改十有八九翻车。
 
 ---
 
@@ -370,3 +374,175 @@ for face in ("front", "back", "left", "right"):
 - base 和 overlay **并排对比**，才能看出 overlay 遮没遮 base。
 - 查透明：`[3]==0` 是挖洞，`0<[3]<255` 是半透明（§8 规则 2 会看穿）。
 - 常见冲突：挖洞覆盖了发梢/配件、护腕只画单面（环绕不完整）、base 留了肤色而非该有的内层。
+
+---
+
+## 16. 配色测量与统一（先量再改）
+
+「这个皮肤和披风不搭」是**可测量的**，别凭肉眼猜。库里有现成工具：
+
+```python
+from skinlib import color_difference, harmonize, harmonize_report, region_mask
+
+color_difference("skin.png", "cape.png")                # 8.1 —— 平均 ΔE（CIE76）
+harmonize("skin.png", "cape.png").save("matched.png")   # → 4.3
+```
+
+`ΔE` 读法：**< 2 基本看不出，> 5 明显**。
+
+### 三条测量纪律（都踩过坑）
+
+1. **参考色板取精确色，不要量化。** `palette_of_image(..., quantize=False)`；`harmonize`
+   和 `color_difference` 内部已经这样。默认的 16 级合并会把披风的 `#FDFB9A` 压成
+   `#F0F090`（整体偏暗），统一效果实测量差一档（6.2 → 4.3）。
+2. **两边色数要对等。**「到最近参考色的平均 ΔE」会随图像色数增多而变小 —— 184 色的
+   皮肤和 12 色的披风直接比，皮肤必然"看起来更忠实"（1.8 vs 9.8，**假象**）；各取前
+   12 个主色再比才站得住（3.1 vs 9.4，**真象**）。这是最容易骗到自己的一个陷阱。
+3. **两条轴都量**：目标 ↔ 参考（要统一的），以及各自 ↔ **原版基准**（要保血统的）。
+   改 A 去就 B 一定在另一条轴付代价，量清楚才好取舍。
+
+### 两种模式：换色度 vs 换色板
+
+| mode | 允许动什么 | 用在 |
+|------|-----------|------|
+| `retheme`（默认） | **只换色度，明度不动** | 手绘分层皮肤 —— 4 档梯度原样保留（实测最大 \|ΔL\| 0.7） |
+| `palette` | 整体贴到参考色号（含明度） | 就要颜色**等于**参考色号；层次被压平（实测最大 \|ΔL\| 20.6） |
+
+`strength` 0~1 连续可调；不够就调，不用重画。
+
+**方向要想清楚**：色差大的一方通常是"偏离方"，把忠实的一方拉过去会洗掉它的身份。
+偏离方若在你手上（自己的披风/logo），改它往往两条轴同时变好。
+
+### 只改看得见的地方
+
+```python
+back = region_mask("steve", 64, parts=("body", "left_leg", "right_leg"),
+                   layers=("base",), faces=("back",))
+report = harmonize_report("skin.png", "cape.png", mode="retheme", mask=back)
+report["delta_before"], report["delta_after"]   # 6.3 → 2.4（都在该区域内测）
+report["image"].save("back_matched.png")
+```
+
+披风挂在背后就只改背面；护腕/护膝只改 overlay 层。`harmonize_report` 的前后值按同一个
+mask 测，可直接比较。CLI：`mc-skin harmonize skin.png --reference cape.png [--mode palette]
+[--strength 0.6] [--faces back]`。
+
+---
+
+## 17. 服装提亮（把「近黑不可读」救回来）
+
+§2 第 1 条说近黑不可读，但**改法本身有两个坑**（幽匿版实战）：
+
+### 坑 1：明度要「整体偏移」，不要往目标值挤压
+
+```
+L* 4 / 5 / 9 / 15 / 25  →  挤向目标 L*29：17 / 18 / 20 / 23 / 27  ✗ 每档只差 1~2，梯度没了
+L* 4 / 5 / 9 / 15 / 25  →  整体 +16：     20 / 21 / 25 / 31 / 41  ✓ 梯度原样保留
+```
+
+```python
+from skinlib.harmonize import lab_to_rgb, rgb_to_lab
+
+def lift(rgb, delta, blue, ref=(9, 47, 70)):
+    """整体上移 L*，色度按 blue 混向参考色（此处用披风的偏蓝暗色）。"""
+    light, a, b = rgb_to_lab(rgb)
+    _, ra, rb = rgb_to_lab(ref)
+    return lab_to_rgb((light + delta, a + (ra - a) * blue, b + (rb - b) * blue))[:3]
+```
+
+### 坑 2：按色号换会漏掉大半
+
+实测：躯干+四肢 1701 个不透明像素里**只有 16% 精确等于那 5 个服装常量**，71% 是
+着色器算出来的**渐变混合色**（`artistic` 是连续色阶）。按色号换漏掉 56% 的袍面，
+结果「看着几乎没变」。
+
+**正解：按「离哪一档调色板常量最近」（Lab）给像素贴标签**，只提目标材质那几档 ——
+渐变色跟着它所属的材质走，兄弟材质（甲片/腰带/腐肉）由各自的标签护住：
+
+```python
+PALETTE = {(6,14,16): "garment", (13,18,23): "garment", (17,27,33): "garment",
+           (5,42,50): "garment", (3,65,80): "garment",
+           (64,87,108): "plate",   (40,54,68): "plate",    # 甲片 + 它的阴影
+           (187,195,155): "bone",  (0,146,149): "glow",     # …其余照常列全
+           }
+LAB = [(rgb_to_lab(c), name) for c, name in PALETTE.items()]
+
+def label(rgb):
+    lab = rgb_to_lab(rgb)
+    return min(LAB, key=lambda p: sum((x - y) ** 2 for x, y in zip(lab, p[0])))[1]
+```
+
+### 两个边界（实测出来的）
+
+- **同一色号跨材质就分不开**：`#0D1217` 既是袍体阴影又是**骨缝**，`#060E10` 既是袍体
+  深影又是**眼窝**。眼窝靠**区域**保护（head/base 整块跳过），骨缝只能接受一起变亮
+  （L*5→21；骨头在 L*60+，缝隙照读得出）。
+- **别让兄弟材质被「抬过头」**：单靠「L* < 34 且 b* < 0」这种亮度条件，会把甲片阴影
+  `#283644`（L*22）也抬到 L*38，**反超甲片本体** `#40576C`（L*36），立体感倒置。
+  按标签归类自然避开。
+
+### 收尾：用不变量验，别只看图
+
+```python
+changed = [(x, y) for y in range(64) for x in range(64) if a[x, y] != b[x, y]]
+assert changed                                            # 该动的真动了
+assert all(a[p] == b[p] for p in face_pixels)             # 脸 0 改动
+assert all(a[x, y][3] == b[x, y][3] for x, y in changed)  # alpha 不变
+```
+
+三档实测验收（每档改 1313 像素）：脸 0 / 骨头 0 / 荧光 0 / 甲片 0 / 腰带 0 / 腐肉 0
+改动，alpha 一致，单像素最大 ΔL* = 请求值（10.2 / 16.2 / 22.2）。
+
+## 18. 通用材质生成（非皮肤贴图）
+
+皮肤之外的一切贴图 —— 方块面、物品图标、披风、盔甲层 —— 用的是**同一套绘制原语**。
+`shading`/`patterns`/`materials`/`overlay`/`decoration` 从来不需要「皮肤」，只需要一块能回答
+`region`/`box`/`pixel`/`get_pixel` 并且说明自己**有哪些面**的画布：`Texture` 就是这块画布。
+
+```python
+from skinlib import Texture, block, icon
+from skinlib.overlay import runes
+
+# 一个立方体真正要画的三张（side 四面复用）
+t = block((42, 77, 74, 255), style="combined", noise=4)   # 48x16: top/side/bottom
+runes(t, "all", (127, 255, 212, 255), count=2, seed=3)    # 原语直接作用在上面
+t.save_faces("out", "sculk", scale=1)                     # out/sculk_top.png ...
+
+icon((41, 223, 235, 255), shape="shard", glow=True).save_faces("out", "echo_shard")
+
+# 已有的贴图也能当画布用
+cape = Texture.load("cape.png", faces=("front",))
+```
+
+原版约定（是画法规则，不是注册表数据）：
+
+| 约定 | 做法 |
+|------|------|
+| 尺寸 | 方块/物品 16×16；披风/鞘翅/盔甲层 64×32；`texture_size(kind)` 查表 |
+| 立方体三面 | `top` 最亮（×1.15）、`side` 居中（×1.0）、`bottom` 最暗（×0.8）。**先按面压明度，再上风格** —— 扁平的 16×16 才有立体感 |
+| 生物群系 tint 贴图 | 画成**灰度**，运行时由游戏乘 tint。画成彩色 = 游戏里被二次染色（`tint_ready=True`） |
+| 自发光贴图 | 整体等比抬亮（`glow=True`）。游戏对这些面本来就不做光照，所以这是**可读性**提亮，不是模拟光照 |
+| 物品图标 | 形状来自**剪影**而非矩形，留 1px 透明边距；只有遮罩内的像素参与后续所有 pass |
+
+**坑**（实测）：
+
+- **面集必须跟着画布走**。原语是「逐面」绘制的；一块单面画布若被当成 6 面画，同一片像素会被
+  叠画 6 遍（噪点/划痕密度直接 ×6）。`model.canvas_faces()` 让画布声明自己的面，`Skin` 仍是
+  6 面 —— 新增画布类型时必须尊重它。
+- **自发光不是「中心加亮」**。`glow_center` 用径向渐变**整体替换**像素：皮肤上做水晶可以，
+  拿它当自发光会把刚画好的面间明暗关系清零。要等比提亮（保比例、顶端自然截断）。
+- **tint 灰度要在自发光/噪点之前做**，否则 glow 的颜色会被灰度抹平（反了就等于白做）。
+- **单面画布对任何面名都应答**（`paint_face(part, layer, "all", ...)` 这类写法才顺手），
+  多面画布遇到未声明的面会 `KeyError` —— 这是故意的，别用 `try` 兜住。
+
+注册表侧（`gamedata`）不给颜色、也不给贴图路径，只给**事实**：`texture_spec(name)` 返回
+kind / 尺寸 / 自发光 / 透明 / tint 组 / 材质组 / 风格族 / state 列表。完整生成入口：
+
+```bash
+mc-skin gamedata spec grass_block                     # 先看事实：tint=grass
+mc-skin texture grass_block --color 124,189,74 -o out --scale 8
+```
+
+`--color` 必须自己给（方块没有颜色数据）；tint 组存在时自动输出灰度。state 列表提示
+「这个方块有几套变体」，但**变体贴图的文件名不在数据里**，别去猜。
+

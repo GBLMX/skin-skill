@@ -15,7 +15,7 @@ import random
 from typing import Callable, Optional
 
 from . import colors
-from .model import Color, FACES
+from .model import Color, canvas_faces
 from .skin import Skin
 
 # A mask decides, for each logical (face, u, v) of a part, whether an overlay
@@ -82,7 +82,7 @@ def overlay_pattern(skin: Skin, part, pattern, layer: str = "base",
         raise ValueError(f"mode must be one of {BLEND_MODES}")
     pat = pattern if callable(pattern) else (lambda face, u, v: pattern)
 
-    for face in FACES:
+    for face in canvas_faces(skin):
         lw = skin.box(part, layer, face).w // skin.scale
         lh = skin.box(part, layer, face).h // skin.scale
         for u in range(lw):
@@ -109,7 +109,7 @@ def scratches(skin: Skin, part, color: Optional[Color] = None,
     repaint), so the base texture shows through.
     """
     rng = random.Random(seed)
-    for face in FACES:
+    for face in canvas_faces(skin):
         lw = skin.box(part, layer, face).w // skin.scale
         lh = skin.box(part, layer, face).h // skin.scale
         for _ in range(count):
@@ -131,7 +131,7 @@ def cracks(skin: Skin, part, color: Optional[Color] = None,
            layer: str = "base", count: int = 2, seed: int = 0) -> Skin:
     """Crack lines: short branching random walks (stone/metal damage)."""
     rng = random.Random(seed)
-    for face in FACES:
+    for face in canvas_faces(skin):
         lw = skin.box(part, layer, face).w // skin.scale
         lh = skin.box(part, layer, face).h // skin.scale
         for _ in range(count):
@@ -154,7 +154,7 @@ def runes(skin: Skin, part, color: Color = (120, 220, 255, 255),
     """Glowing glyph marks (cross-shaped strokes) at seeded positions."""
     rng = random.Random(seed)
     glyph = ((0, -1), (0, 0), (0, 1), (1, 0), (-1, 0))
-    for face in FACES:
+    for face in canvas_faces(skin):
         lw = skin.box(part, layer, face).w // skin.scale
         lh = skin.box(part, layer, face).h // skin.scale
         for _ in range(count):

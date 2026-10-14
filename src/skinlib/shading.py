@@ -16,7 +16,7 @@ import random
 
 from . import colors
 from ._raster import cols, pixels, rows, transform
-from .model import Color, FACES
+from .model import Color, canvas_faces
 from .skin import Skin
 
 
@@ -117,6 +117,10 @@ _SHADING_STYLES = {
     "artistic": _artistic,
 }
 
+# The public spellings of the styles above, for CLIs and docs that need to
+# validate the name before calling in.
+SHADING_STYLES = tuple(_SHADING_STYLES)
+
 
 def apply_shading(skin: Skin, part, base: Color, layer: str = "base",
                   style: str = "combined", noise: bool = False,
@@ -162,6 +166,11 @@ def apply_style(skin: Skin, part, base: Color, profile: str,
     return skin
 
 
+# A fade paints a band around a body part, so a skin's four sides are in scope
+# and its top/bottom caps are not.  Any other canvas fades what it declares.
+SIDE_FACES = ("front", "back", "left", "right")
+
+
 def apply_fade(skin: Skin, part, v0: int, v1: int, colors,
                faces=None, layer: str = "base") -> Skin:
     """在 [v0, v1) 行画不透明色阶渐变（消散/渐深，见 techniques §12）。
@@ -169,10 +178,14 @@ def apply_fade(skin: Skin, part, v0: int, v1: int, colors,
     逐行应用 colors 色阶（第 v 行用 colors[v-v0]，越界取最后一个），模拟
     「实体 → 幽灵/阴影」的淡出。玩家皮肤做不了半透明，用色阶台阶模拟。
 
+    ``faces`` 默认：皮肤走**四个侧面**（top/bottom 是盖，不属于环绕带）；其它
+    画布（``Texture``）走它自己声明的面。要显式指定就照常传。
+
     用法：双腿小腿消散
         apply_fade(s, "right_leg", 9, 12, [GHOST_3, GHOST_2, GHOST_1])
     """
-    faces = faces or ("front", "back", "left", "right")
+    if faces is None:
+        faces = SIDE_FACES if isinstance(skin, Skin) else canvas_faces(skin)
     for v in range(v0, v1):
         color = colors[min(v - v0, len(colors) - 1)]
         for face in faces:

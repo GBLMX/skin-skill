@@ -30,6 +30,18 @@ LAYERS: Tuple[Layer, ...] = ("base", "overlay")
 FACES: Tuple[Face, ...] = ("front", "right", "top", "bottom", "back", "left")
 
 
+def canvas_faces(canvas) -> Tuple[str, ...]:
+    """Return the faces a paint canvas actually stores.
+
+    A ``Skin`` covers all six faces of every part and therefore answers
+    ``FACES``. A standalone texture (one block side, an item icon, a cape
+    sheet) declares only the faces it really has, and every per-face pass must
+    iterate *those*: painting six faces onto a one-face canvas would stack six
+    passes on the same pixels.
+    """
+    return tuple(getattr(canvas, "faces", FACES))
+
+
 @dataclass(frozen=True)
 class Box:
     """A texture region (x, y, width, height) in UV space."""

@@ -7,22 +7,51 @@ with matching colors. Uses only the standard library + Pillow (no numpy).
 from __future__ import annotations
 
 from collections import Counter
-from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional
 
 from PIL import Image
 
 from .model import Color
 
 
-def _flatten(img: Image.Image) -> List[Tuple[int, int, int]]:
-    """Return a list of opaque RGB pixels (ignoring near-transparent)."""
-    rgb = img.convert("RGBA")
-    out = []
-    for r, g, b, a in rgb.getdata():
-        if a > 128:
-            out.append((r, g, b))
-    return out
+def palette_of_image(img: Image.Image, n: int = 8,
+                     mask: Optional[Image.Image] = None,
+                     quantize: bool = True) -> List[Color]:
+    """The n most common colors of an in-memory image, as RGBA tuples.
+
+    Near-transparent pixels never count. ``mask`` -- an "L" image the same size
+    as ``img`` -- restricts which pixels are sampled, e.g. to one layer or body
+    part. Near-identical colors are merged (quantize levels per channel) so a
+    noisy source still yields distinct entries. Returns fewer than ``n`` when
+    the image simply has fewer distinct colors, and ``[]`` when it is empty.
+
+    Pass ``quantize=False`` to keep the exact colors -- what color matching
+    wants, since binning to 16 levels darkens every entry by up to 15 and a
+    pixel-art reference has distinct colors already.
+    """
+    rgba = img.convert("RGBA")
+    if mask is not None and mask.size != rgba.size:
+        raise ValueError(f"mask {mask.size} does not match image {rgba.size}")
+
+    px = rgba.load()
+    mk = mask.convert("L").load() if mask is not None else None
+    counts: Counter = Counter()
+    for y in range(rgba.height):
+        for x in range(rgba.width):
+            if mk is not None and mk[x, y] <= 127:
+                continue
+            r, g, b, a = px[x, y]
+            if a > 128:
+                counts[(r, g, b)] += 1
+    if not counts:
+        return []
+    if not quantize:
+        return [(*rgb, 255) for rgb, _ in counts.most_common(n)]
+
+    quant: Counter = Counter()
+    for (r, g, b), count in counts.items():
+        quant[(r // 16 * 16, g // 16 * 16, b // 16 * 16)] += count
+    return [(*rgb, 255) for rgb, _ in quant.most_common(n)]
 
 
 def dominant_colors(path: str, n: int = 8,
@@ -34,21 +63,12 @@ def dominant_colors(path: str, n: int = 8,
     img = Image.open(path).convert("RGBA")
     if resize:
         img = img.resize((resize, resize), Image.LANCZOS)
-    pixels = _flatten(img)
-    if not pixels:
+    palette = palette_of_image(img, n)
+    if not palette:
         return [(0, 0, 0, 255)] * n
-
-    counter = Counter(pixels)
-    # Merge very-similar colors (quantize to 16 levels per channel)
-    quant = Counter()
-    for (r, g, b), count in counter.items():
-        q = (r // 16 * 16, g // 16 * 16, b // 16 * 16)
-        quant[q] += count
-
-    top = [c for c, _ in quant.most_common(n)]
-    while len(top) < n:
-        top.append(top[-1] if top else (0, 0, 0))
-    return [(*rgb, 255) for rgb in top]
+    while len(palette) < n:                 # fewer distinct colors than asked
+        palette.append(palette[-1])
+    return palette
 
 
 def sample_palette(path: str, n: int = 8) -> List[Color]:

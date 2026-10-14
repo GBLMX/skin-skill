@@ -41,6 +41,7 @@ from .shading import (
     apply_style,
     apply_fade,
     STYLE_PROFILES,
+    SHADING_STYLES,
     cylindrical,
     vertical_gradient,
     combined,
@@ -60,7 +61,7 @@ from .patterns import (
     checker,
     camouflage,
 )
-from .sampling import sample_palette, dominant_colors
+from .sampling import sample_palette, dominant_colors, palette_of_image
 from .render import render_3d, render_flat, render_isometric
 from .palette import SKIN_TONES, HAIR_COLORS, CLOTHING, ENERGY, all_palettes
 from .poses import POSES, get_pose, PartPose
@@ -85,6 +86,26 @@ from .overlay import (
     runes,
 )
 from .recipe import generate_from_recipe, recipe_to_python, OPS
+from .harmonize import (
+    harmonize,
+    harmonize_report,
+    color_difference,
+    region_mask,
+)
+from .texture import (
+    Texture,
+    block,
+    icon,
+    from_spec,
+    generate,
+    texture_size,
+    TEXTURE_SIZES,
+    BLOCK_FACES,
+    ICON_ART,
+)
+# Exposed as a namespace, not flattened: the vanilla data layer needs the
+# optional minebase extra and pulls in a large dataset surface.
+from . import gamedata
 
 __all__ = [
     "Skin", "Color", "Part", "Layer", "Face",
@@ -92,14 +113,14 @@ __all__ = [
     "SteveLayout", "make_layout", "legacy_to_modern", "detect_model",
     "strip_matte", "create", "load", "parse_color",
     "mix", "shade", "gray", "blend", "gradient",
-    "apply_shading", "apply_style", "apply_fade", "STYLE_PROFILES", "cylindrical", "vertical_gradient", "combined",
+    "apply_shading", "apply_style", "apply_fade", "STYLE_PROFILES", "SHADING_STYLES", "cylindrical", "vertical_gradient", "combined",
     "fabric_noise", "outline",
     "artistic",
     "hat", "jacket_front", "pants_outline",
     "add_highlights", "add_shadows", "apply_3d_decoration",
     "face", "hair", "band",
     "apply_pattern", "PATTERNS", "stripes", "checker", "camouflage",
-    "sample_palette", "dominant_colors",
+    "sample_palette", "dominant_colors", "palette_of_image",
     "render_3d", "render_flat", "render_isometric",
     "SKIN_TONES", "HAIR_COLORS", "CLOTHING", "ENERGY", "all_palettes",
     "build_template", "TEMPLATES",
@@ -110,6 +131,10 @@ __all__ = [
     "overlay_pattern", "apply_overlay", "OVERLAYS",
     "rect_mask", "random_mask", "scratches", "cracks", "runes",
     "generate_from_recipe", "recipe_to_python", "OPS",
+    "harmonize", "harmonize_report", "color_difference", "region_mask",
+    "Texture", "block", "icon", "from_spec", "generate",
+    "texture_size", "TEXTURE_SIZES", "BLOCK_FACES", "ICON_ART",
+    "gamedata",
 ]
 
-__version__ = "3.3.0"
+__version__ = "3.4.0"

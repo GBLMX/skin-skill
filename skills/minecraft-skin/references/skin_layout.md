@@ -134,3 +134,32 @@ Legs are 4x12 per face.
 ## Cape (separate file)
 
 A cape is a separate **64 x 32** PNG, not part of the skin file.
+
+That is exactly why `harmonize` takes the reference as a *statistic* rather than
+by matching pixel positions: a 64×32 cape and a 64×64 skin never line up, and
+they don't need to (see `techniques.md` §16).
+
+## Selecting regions in code (`region_mask`)
+
+The keys in the tables above are the same three `region_mask` takes, so a region
+you read off this page is a call:
+
+```python
+from skinlib import region_mask
+
+# Left-leg overlay (pants), all six faces — the table just above:
+mask = region_mask("steve", 64, parts=("left_leg",), layers=("overlay",))
+
+# Body/leg base, back faces only — what a cape hangs over:
+back = region_mask("steve", 64, parts=("body", "left_leg", "right_leg"),
+                   layers=("base",), faces=("back",))
+```
+
+`parts`/`layers`/`faces` each default to everything. The result is an `"L"` image
+(255 inside) sized like the skin, so it plugs straight into `harmonize(...,
+mask=...)`, `harmonize_report(..., mask=...)` and `palette_of_image(...,
+mask=...)` — that is how you measure or fix one region instead of the whole
+texture.
+
+Alex skins take the same calls at 64×64; the arm regions are just 3 px wide
+instead of 4, so `parts=("left_arm",)` covers three columns, not four.

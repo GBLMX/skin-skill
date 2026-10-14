@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Optional
 
 from . import colors
-from .model import Color, FACES
+from .model import Color, canvas_faces
 from .skin import Skin
 
 
@@ -87,7 +87,7 @@ def pants_outline(skin: Skin, color: Color, highlight: Optional[Color] = None) -
 def add_highlights(skin: Skin, part, color: Color, layer: str = "base",
                    intensity: float = 1.3, positions=None) -> Skin:
     """Add highlight pixels (bright accents) to suggest raised areas."""
-    for face in FACES:
+    for face in canvas_faces(skin):
         x, y, w, h = skin.region(part, layer, face)
         pts = positions or [(w // 2, 1), (w // 2, h // 3)]
         for u, v in pts:
@@ -99,7 +99,7 @@ def add_highlights(skin: Skin, part, color: Color, layer: str = "base",
 def add_shadows(skin: Skin, part, color: Color, layer: str = "base",
                 intensity: float = 0.6) -> Skin:
     """Add shadow pixels (dark) along bottom/edges for depth."""
-    for face in FACES:
+    for face in canvas_faces(skin):
         x, y, w, h = skin.region(part, layer, face)
         # bottom row shadow
         for i in range(w):

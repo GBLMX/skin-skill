@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mc-skin"
-version = "3.3.0"
-description = "Programmatic Minecraft player skin generation and editing: double-layer, Steve/Alex, realistic shading, materials, and 3D rendering."
+version = "3.4.0"
+description = "Programmatic Minecraft player skin and texture generation: double-layer, Steve/Alex, realistic shading, materials, 3D rendering, block faces and item icons."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -29,6 +29,12 @@ dependencies = [
 # The default package ships a pure-Python Perlin implementation with zero
 # dependencies beyond Pillow.
 noise = ["opensimplex>=0.4"]
+
+# Vanilla game data (PrismarineJS minecraft-data, via minebase). Large: the
+# dependency embeds all of minecraft-data, ~330 MB installed. Opt in here when
+# you want version-accurate registries, biome tint palettes and skin-format
+# facts to line generation up with the real game.
+gamedata = ["minebase>=0.3"]
 
 [project.urls]
 Homepage = "https://github.com/GBLMX/skin-skill"
