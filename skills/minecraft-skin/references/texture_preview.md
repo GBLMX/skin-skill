@@ -19,6 +19,7 @@ from PIL import Image
 def contact_sheet(paths, cols=8, cell=64, pad=8, bg=(24, 24, 28, 255)):
     """把一批贴图放大拼成一张联络表,按文件名排序。"""
     paths = sorted(Path(p) for p in paths)
+    cols = min(cols, max(1, len(paths)))
     rows = (len(paths) + cols - 1) // cols
     sheet = Image.new("RGBA", (cols * (cell + pad) + pad,
                                rows * (cell + pad) + pad), bg)
@@ -67,7 +68,7 @@ python examples/texture_preview.py --input out/*.png -o previews # 只拼接触�
 实测(16px 面 ×10 放大 → 面宽 160):**76 800 = 3×160×160** ✓,
 且顶面中心取到 top 贴图的原始像素、西面 = side×0.72、东面 = side×1.0 ✓。
 库里的 `render._paste_affine` 是同一套数学(皮肤 3D 在用),但它是私有的 —— 示例自带一份,
-好让装了 PyPI 版 `mc-skin` 的人也能直接跑。
+这样示例不碰私有 API。`--input` 模式更是纯 Pillow(不导入 `skinlib`),任何版本、乃至没装库时都能跑。
 
 ## 3. 只有要「像游戏里一样」时,才上外部渲染器
 

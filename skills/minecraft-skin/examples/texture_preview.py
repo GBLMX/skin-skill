@@ -28,6 +28,7 @@ def contact_sheet(paths, cols: int = 8, cell: int = 64, pad: int = 8,
                   bg=(24, 24, 28, 255)):
     """Tile a batch of textures, nearest-neighbour upscaled, in name order."""
     paths = sorted(Path(p) for p in paths)
+    cols = min(cols, max(1, len(paths)))
     rows = (len(paths) + cols - 1) // cols
     sheet = Image.new(
         "RGBA", (cols * (cell + pad) + pad, rows * (cell + pad) + pad), bg)
@@ -107,16 +108,24 @@ def main(argv=None):
     out = Path(a.outdir)
     out.mkdir(parents=True, exist_ok=True)
 
-    from skinlib import block, generate, parse_color
-
-    color = parse_color(a.color)
-    if a.input:
+    if a.input is not None:
+        if not a.input:
+            raise SystemExit("--input needs at least one PNG "
+                             "(drop the flag to generate a sheet instead)")
+        missing = [p for p in a.input if not Path(p).exists()]
+        if missing:
+            raise SystemExit(f"no such file: {', '.join(missing)}")
         sheet, names = contact_sheet(a.input)
         sheet.save(out / "contact.png")
         print(f"contact sheet ({len(names)}): {', '.join(names[:6])}"
               f"{' ...' if len(names) > 6 else ''} -> {out / 'contact.png'}")
         return
 
+    # Imported here, not at the top: tiling your own PNGs is pure Pillow, so
+    # that mode runs against any skinlib (or none).
+    from skinlib import block, generate, parse_color
+
+    color = parse_color(a.color)
     tex = (generate(a.name, color) if a.name else block(color, noise=4))
     faces = tex.save_faces(out, a.name or "block")
     for path in faces:
