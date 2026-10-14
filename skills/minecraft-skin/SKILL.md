@@ -44,6 +44,9 @@ render_3d(s, pose="walking").save("preview.png")
 from skinlib import block, icon, Texture  # 非皮肤贴图，同一套原语
 block((42, 77, 74, 255), noise=4).save_faces("out", "sculk")        # top/side/bottom
 icon((41, 223, 235, 255), shape="shard", glow=True).save_faces("out", "echo_shard")
+
+# 看/筛：接触表（批量）+ 等轴测立方体（明度关系），零依赖
+# python examples/texture_preview.py --name sculk_sensor --color 42,77,74
 ```
 
 配色统一（先量再改；`retheme` 保明暗层次、`palette` 精确贴参考色号）：
@@ -120,6 +123,11 @@ from_spec(spec, color, style="mottled", noise=8)   # 已拿到 spec 时直接画
 完整约定与坑（面集必须跟着画布走、自发光不等于径向加亮、tint 灰度要在 glow 之前）→
 `references/techniques.md` §18。
 
+**看/筛**：批量筛用接触表（几十张一屏），判「像不像立方体」用等轴测立方体（自检不变量：
+上色像素必须恰好 = 3×面宽²）。命令、代码与坑 → `references/texture_preview.md`，
+可跑示例 `examples/texture_preview.py`。只有要「像游戏里一样」时才上外部渲染器
+（唯一推荐 `block-model-renderer`：吃任意模型 JSON + 自带贴图），**别把 Node 引进 Python 包**。
+
 ## 皮肤美学参考（风格基因）
 
 | 风格 | 入口 | 配色 | 光影档案 |
@@ -175,6 +183,8 @@ from_spec(spec, color, style="mottled", noise=8)   # 已拿到 spec 时直接画
 The full API lives in the library's `skinlib/__init__.py` and README; run
 `mc-skin --help` for the CLI. See `references/skin_layout.md` for the UV
 coordinate map, `references/techniques.md` for the design playbook（分层/环绕/
-配色/光影/骷髅/非对称/挖洞/HD 工作流/配色测量/服装提亮/§18 通用材质生成）, and
-`references/blockbench_mcp_workflow.md` for driving Blockbench via MCP.
-`examples/harmonize_reference.py` is a runnable measure-then-match demo.
+配色/光影/骷髅/非对称/挖洞/HD 工作流/配色测量/服装提亮/§18 通用材质生成）,
+`references/texture_preview.md` for screening generated textures（接触表/等轴测立方体/
+该不该上外部渲染器）, and `references/blockbench_mcp_workflow.md` for driving
+Blockbench via MCP. `examples/harmonize_reference.py` and
+`examples/texture_preview.py` are runnable demos（先量再统一配色 / 看与筛材质）。
