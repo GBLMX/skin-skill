@@ -546,3 +546,29 @@ mc-skin texture grass_block --color 124,189,74 -o out --scale 8
 `--color` 必须自己给（方块没有颜色数据）；tint 组存在时自动输出灰度。state 列表提示
 「这个方块有几套变体」，但**变体贴图的文件名不在数据里**，别去猜。
 
+### 按风格族批量 + 打包成资源包
+
+```bash
+mc-skin texture --family sculk --color 42,77,74 -o out/sculk       # 每成员一个 seed
+mc-skin texture --family sculk --color 42,77,74 --pack sculk.zip   # 直接出资源包
+```
+
+- **批量的单位是风格族**（`gamedata.styles()` 的族，如 `sculk` 六块）：`--family` 对族内每个
+  方块/物品各出一张；族内成员的 seed 由名字派生（`crc32(name) % 997`）再加 `--seed` 整体偏移
+  —— 同族不会塌成同一张贴图，而且**可复现**（重跑逐字节一致）。`--noise 0` 时 seed 不改变像素，
+  这是对的：同族同材质的方块本来就该长一样，它们靠 glow / tint / size 这些事实彼此区分。
+- **打包**：`build_pack(path, blocks={名: 贴图}, items={名: 图标}, version=...)`，`path` 是目录或
+  `.zip`。写出的结构 = `pack.mcmeta` + `assets/<ns>/textures/block/<名>_<面>.png` +
+  `models/block/<名>.json` + `blockstates/<名>.json`（物品则是 `textures/item/<名>.png` +
+  `models/item/<名>.json`）。资源包**只能替换、不能新增**内容 → 默认命名空间 `minecraft`，
+  连模型与方块状态一起覆盖，贴图才真的会被用上；代价是**带状态的方块（楼梯/门/传感器）在包里
+  只剩一个模型**。
+- **`pack_format` 是个版本相关的数字**：`skinlib.pack` 里的对照表转录自 Minecraft Wiki 的
+  **资源包**表（与数据包那张不同：1.21.6 = 63、1.21 = 34），只覆盖正式版，快照要显式 `format=`。
+  1.21.9 起 `pack.mcmeta` 改用 `min_format`/`max_format`，写出器跟着版本走。
+- **不变量**：包里每个 `models/*.json` 的 `textures` 引用都必须能对应到包内已写的 PNG（对不上
+  游戏里就是紫黑方块）。`tests/test_pack.py` 有一条测试专门守这个。
+- **配方（recipe）也能出材质**：首个 step 是 `{"op": "texture", ...}` 时它就是画布来源，
+  其后可接 `shading`/`material`/`pattern`/`overlay`/`outline`/`pixel`/`paint`；`face`/`hair`/
+  `band`/`decorate` 是皮肤专属，用在材质上会**明确报错**而不是静默乱画。`output_dir` 每面一个 PNG。
+

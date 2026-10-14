@@ -19,6 +19,8 @@ Usage:
     python skin_tool.py gamedata formats
     python skin_tool.py gamedata spec sculk_sensor
     python skin_tool.py texture sculk_sensor --color 42,77,74 --scale 8
+    python skin_tool.py texture --family sculk --color 42,77,74 -o textures/sculk
+    python skin_tool.py texture --family sculk --color 42,77,74 --pack sculk-pack.zip
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ import argparse
 import os
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 
 from .colors import parse_color
@@ -47,6 +50,7 @@ from .overlay import apply_overlay, OVERLAYS
 from .recipe import generate_from_recipe
 from .harmonize import MODES as HARMONIZE_MODES, harmonize_report, region_mask
 from .transforms import detect_model
+from .pack import build_pack
 from . import texture as T
 from . import gamedata as G
 
@@ -408,15 +412,29 @@ def _cmd_gamedata(a):
                 print(f"    {entry.name:34} {entry.display_name:26} {props}")
 
 
+def _make_texture(a, name: str, seed: int = None):
+    """Generate one texture from the CLI args; returns ``(texture, spec)``."""
+    spec = G.texture_spec(a.name if name is None else name, a.version, a.edition)
+    tex = T.from_spec(spec, parse_color(a.color), style=a.style,
+                      material=a.material, shape=a.shape, noise=a.noise,
+                      seed=a.seed if seed is None else seed, glow=a.glow,
+                      glow_strength=a.glow_strength, tint_ready=a.tint_ready,
+                      alpha=a.alpha)
+    return tex, spec
+
+
 def _cmd_texture(a):
     """Generate a texture that is not a skin: a block sheet or an item icon."""
     if not G.available():
         raise SystemExit(G.INSTALL_HINT)
-    spec = G.texture_spec(a.name, a.version, a.edition)
-    tex = T.from_spec(spec, parse_color(a.color), style=a.style,
-                      material=a.material, shape=a.shape, noise=a.noise,
-                      seed=a.seed, glow=a.glow, glow_strength=a.glow_strength,
-                      tint_ready=a.tint_ready, alpha=a.alpha)
+    if a.family:
+        if a.name:
+            raise SystemExit("pass a name or --family, not both")
+        return _cmd_texture_family(a)
+    if not a.name:
+        raise SystemExit("pass a block/item name or --family NAME "
+                         "(families: mc-skin gamedata styles)")
+    tex, spec = _make_texture(a, a.name)
     print(f"{spec.kind}: {spec.name}  ({spec.display_name})")
     print(f"  sheet {tex.width}x{tex.height}, faces: {', '.join(tex.faces)}")
     print(f"  emissive={spec.emissive}  transparent={spec.transparent}  "
@@ -425,8 +443,52 @@ def _cmd_texture(a):
     for state, values in spec.states:
         shown = ", ".join(values[:8]) + (" ..." if len(values) > 8 else "")
         print(f"  variant state {state}: {shown or '(bool)'}")
-    for path in tex.save_faces(a.outdir, spec.name, scale=a.scale):
-        print(f"  -> {path}")
+    _emit_textures(a, [(spec.kind, spec.name, tex)])
+
+
+def _cmd_texture_family(a):
+    """Generate one texture per member of a style family (e.g. ``sculk``).
+
+    Every member gets a seed derived from its name, so a family does not
+    collapse into the same texture repeated; ``--seed`` shifts all of them.
+    """
+    fam = G.style(a.family, a.version, a.edition)
+    names = fam.names
+    if not names:
+        raise SystemExit(f"style {fam.name!r} has no blocks or items")
+    print(f"style {fam.name}: {len(names)} members "
+          f"({len(fam.blocks)} blocks, {len(fam.items)} items), "
+          f"version {fam.version}")
+    entries = []
+    for name in names:
+        seed = a.seed + zlib.crc32(name.encode()) % 997
+        tex, spec = _make_texture(a, name, seed=seed)
+        entries.append((spec.kind, spec.name, tex))
+        print(f"  {spec.kind:5} {spec.name:34} {tex.width}x{tex.height} "
+              f"{'/'.join(tex.faces)}")
+    _emit_textures(a, entries, label=fam.name)
+
+
+def _emit_textures(a, entries, label: str = None):
+    """Save generated textures: into a resource pack, or as loose PNGs."""
+    if a.pack:
+        try:
+            path = build_pack(
+                a.pack,
+                blocks={n: t for k, n, t in entries if k == "block"},
+                items={n: t for k, n, t in entries if k != "block"},
+                namespace=a.namespace,
+                version=a.version or G.resolve(a.version, a.edition),
+                format=a.pack_format,
+                description=f"skinlib {label}" if label else None)
+        except ValueError as exc:
+            raise SystemExit(str(exc))
+        print(f"pack -> {path}  ({len(entries)} textures, "
+              f"namespace {a.namespace})")
+        return
+    for _, name, tex in entries:
+        for path in tex.save_faces(a.outdir, name, scale=a.scale):
+            print(f"  -> {path}")
 
 
 def build_parser():
@@ -608,7 +670,11 @@ def build_parser():
     tx = sub.add_parser("texture",
                         help="generate a block sheet or an item icon "
                              "(needs the gamedata extra)")
-    tx.add_argument("name", help="block or item name, e.g. sculk_sensor")
+    tx.add_argument("name", nargs="?",
+                    help="block or item name, e.g. sculk_sensor")
+    tx.add_argument("--family", metavar="NAME", default=None,
+                    help="generate every block and item of a style family "
+                         "(e.g. sculk; list them: mc-skin gamedata styles)")
     tx.add_argument("--color", required=True,
                     help="base color (R,G,B or #RRGGBB)")
     tx.add_argument("-o", "--outdir", default="textures")
@@ -635,6 +701,16 @@ def build_parser():
     tx.add_argument("--alpha", type=int, default=255)
     tx.add_argument("--version", default=None, help="e.g. 1.21.6 (default: latest)")
     tx.add_argument("--edition", choices=G.EDITIONS, default=G.PC)
+    tx.add_argument("--pack", metavar="PATH", default=None,
+                    help="write a resource pack (a directory or a .zip) instead "
+                         "of loose textures; overrides vanilla models and "
+                         "block states")
+    tx.add_argument("--namespace", default="minecraft",
+                    help="asset namespace inside the pack (default: minecraft, "
+                         "i.e. override vanilla)")
+    tx.add_argument("--pack-format", type=float, default=None,
+                    help="resource pack format, for a --version the table "
+                         "does not list (snapshots)")
     tx.set_defaults(func=_cmd_texture)
 
     gd = sub.add_parser("gamedata",

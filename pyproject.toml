@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mc-skin"
-version = "3.4.0"
+version = "3.5.0"
 description = "Programmatic Minecraft player skin and texture generation: double-layer, Steve/Alex, realistic shading, materials, 3D rendering, block faces and item icons."
 readme = "README.md"
 requires-python = ">=3.9"

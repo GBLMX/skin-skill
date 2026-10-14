@@ -103,6 +103,7 @@ from .texture import (
     BLOCK_FACES,
     ICON_ART,
 )
+from .pack import build_pack, pack_format, pack_meta
 # Exposed as a namespace, not flattened: the vanilla data layer needs the
 # optional minebase extra and pulls in a large dataset surface.
 from . import gamedata
@@ -134,7 +135,8 @@ __all__ = [
     "harmonize", "harmonize_report", "color_difference", "region_mask",
     "Texture", "block", "icon", "from_spec", "generate",
     "texture_size", "TEXTURE_SIZES", "BLOCK_FACES", "ICON_ART",
+    "build_pack", "pack_format", "pack_meta",
     "gamedata",
 ]
 
-__version__ = "3.4.0"
+__version__ = "3.5.0"

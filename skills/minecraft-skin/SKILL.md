@@ -1,6 +1,6 @@
 ---
 name: minecraft-skin
-description: "创建、编辑、渲染 Minecraft 玩家皮肤与通用材质（方块面/物品图标/披风/盔甲层等非皮肤贴图）+ 皮肤设计经验手册。含 mc-skin 库的 CLI/API 适配、可选的 minecraft-data 原版数据接入（风格族/主题/原版配色/皮肤格式对齐/贴图事实 texture_spec）、参考配色统一（把皮肤并到披风/logo 的色系并量出 ΔE），以及沉淀的可复用设计技法（分层/环绕/配色纪律/光影三原则/骷髅脸/非对称/挖洞/HD 工作流/通用材质约定）与材质看/筛手法（接触表批量筛选、等轴测立方体预览、何时才该上外部渲染器）。当用户想编程生成或自定义皮肤、想生成方块/物品贴图 PNG、想批量筛选已生成的材质，需要皮肤美学/技法指导，或要让生成结果与原版风格/配色对齐、或要与参考图统一配色时使用。"
+description: "创建、编辑、渲染 Minecraft 玩家皮肤与通用材质（方块面/物品图标/披风/盔甲层等非皮肤贴图）+ 皮肤设计经验手册。含 mc-skin 库的 CLI/API 适配、可选的 minecraft-data 原版数据接入（风格族/主题/原版配色/皮肤格式对齐/贴图事实 texture_spec）、参考配色统一（把皮肤并到披风/logo 的色系并量出 ΔE），以及沉淀的可复用设计技法（分层/环绕/配色纪律/光影三原则/骷髅脸/非对称/挖洞/HD 工作流/通用材质约定）与材质看/筛手法（接触表批量筛选、等轴测立方体预览、何时才该上外部渲染器）、按风格族批量生成与打包成可加载资源包（`build_pack` / `mc-skin texture --family … --pack`）。当用户想编程生成或自定义皮肤、想生成方块/物品贴图 PNG、想让贴图直接进游戏（资源包）、想批量筛选已生成的材质，需要皮肤美学/技法指导，或要让生成结果与原版风格/配色对齐、或要与参考图统一配色时使用。"
 type: tool
 ---
 
@@ -30,6 +30,8 @@ mc-skin render skin.png --outdir previews
 mc-skin gamedata spec sculk_sensor                # 贴图该按什么事实画
 mc-skin texture sculk_sensor --color 42,77,74 -o out --scale 8   # 方块三面
 mc-skin texture echo_shard --color '#29dfeb' --shape shard       # 物品图标
+mc-skin texture --family sculk --color 42,77,74 -o out/sculk      # 整族批量（族内 seed 各异）
+mc-skin texture --family sculk --color 42,77,74 --pack sculk.zip  # 直接产出资源包
 ```
 
 ```python
@@ -41,9 +43,11 @@ apply_material(s, "body", "leather")
 s.save("skin.png")
 render_3d(s, pose="walking").save("preview.png")
 
-from skinlib import block, icon, Texture  # 非皮肤贴图，同一套原语
+from skinlib import block, build_pack, icon, Texture  # 非皮肤贴图，同一套原语
 block((42, 77, 74, 255), noise=4).save_faces("out", "sculk")        # top/side/bottom
 icon((41, 223, 235, 255), shape="shard", glow=True).save_faces("out", "echo_shard")
+build_pack("sculk.zip", blocks={"sculk": block((42, 77, 74, 255))},
+           version="1.21.6")                                        # 贴图 → 可加载资源包
 
 # 看/筛：接触表（批量）+ 等轴测立方体（明度关系），零依赖
 # python examples/texture_preview.py --name sculk_sensor --color 42,77,74
@@ -117,8 +121,18 @@ from_spec(spec, color, style="mottled", noise=8)   # 已拿到 spec 时直接画
 - **tint 组存在时自动出灰度**（也可 `tint_ready=True` 强制）；彩色会被游戏二次染色
 - **`glow=True` 是等比提亮**（游戏对发光面不做光照），不是「中心加亮」
 - 常用旗标：`--style` `--material` `--shape` `--noise` `--glow/--no-glow` `--tint-ready` `--scale`
-- 已有贴图直接当画布：`Texture.load("cape.png", faces=("front",))`
+- **已有贴图直接当画布**：`Texture.load("cape.png", faces=("front",))`
 - **单面画布对任何面名都应答**；多面画布对未声明的面 `KeyError`（故意的，别 try 兜住）
+- **配方里也能用材质**：recipe 的**首个 step** `{"op": "texture", "name"/"color"/"kind": ...}` 就是
+  画布来源，其后可接 `shading`/`material`/`pattern`/`overlay`/`outline`/`pixel`/`paint`（画布无关）；
+  `face`/`hair`/`band`/`decorate` 是皮肤专属，会对材质**明确报错**。`output_dir` 每面出一个 PNG
+  （`prefix` 默认取 `name`）
+- **打包**：`build_pack(target, blocks={名: 贴图}, items={名: 图标}, version="1.21.6")` —— `target`
+  是目录或 `.zip`；写出 `pack.mcmeta` + `textures/block/<名>_<面>.png` + `models/block/<名>.json` +
+  `blockstates/<名>.json`（物品是 `textures/item/<名>.png` + `models/item/<名>.json`）。默认命名空间
+  `minecraft` = **覆盖原版**（资源包只能替换、不能新增），所以模型与方块状态也一起覆盖 —— 带状态的
+  方块（楼梯/门等）会只剩一个模型。`pack_format` 查 `skinlib.pack` 里的维基转录表（资源包专用：
+  1.21.6→63），快照版本必须显式传 `format=`
 
 完整约定与坑（面集必须跟着画布走、自发光不等于径向加亮、tint 灰度要在 glow 之前）→
 `references/techniques.md` §18。

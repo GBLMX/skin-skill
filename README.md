@@ -46,6 +46,8 @@ mc-skin gamedata formats
 mc-skin gamedata spec grass_block
 mc-skin texture sculk_sensor --color 42,77,74 -o out --scale 8
 mc-skin texture echo_shard --color '#29dfeb' --shape shard --glow
+mc-skin texture --family sculk --color 42,77,74 -o out/sculk
+mc-skin texture --family sculk --color 42,77,74 --pack sculk-pack.zip
 ```
 
 Run `mc-skin --help` for every subcommand and option.
@@ -122,6 +124,24 @@ Ops: `shading`, `material`, `pattern`, `overlay`, `decorate`, `face`, `hair`,
 `band`, `outline`, `pixel`, `paint`. Colors can be `"R,G,B"` / `"#RRGGBB"`
 strings or `[r, g, b]` lists.
 
+A recipe whose **first step is `texture`** builds a texture instead of a skin --
+a block sheet or an item icon -- and may then use the canvas-generic ops. The
+skin-only ops (`face`, `hair`, `band`, `decorate`) refuse it, and `output_dir`
+writes one PNG per face:
+
+```python
+recipe = {
+    "steps": [
+        {"op": "texture", "name": "sculk_sensor", "color": "#2a4d4a",
+         "noise": 4, "seed": 1},
+        {"op": "overlay", "part": "all", "overlay": "runes",
+         "color": "#7fffd4", "seed": 3},
+    ],
+    "output_dir": "out/sculk",     # out/sculk/sculk_sensor_top.png, _side, _bottom
+}
+generate_from_recipe(recipe)
+```
+
 ### Generic textures
 
 A skin is not the only canvas. `shading`, `patterns`, `materials`, `overlay` and
@@ -169,6 +189,35 @@ carry no colour data (see the caveat below). A `Texture` is a row of faces
 side by side, and its painting primitives run once per face it declares --
 rendering (`render_3d`) and validation stay skin-only, since they need the 64x64
 body layout.
+
+### Resource packs
+
+`build_pack` turns generated textures into a resource pack Minecraft can load:
+the PNGs at the paths the client reads, plus the models, block states and
+`pack.mcmeta` that make it use them.
+
+```python
+from skinlib import block, build_pack, pack_format
+
+pack_format("1.21.6")                     # 63 — looked up in the version table
+build_pack("sculk-pack.zip",              # a .zip or a directory
+           blocks={"sculk": block((42, 77, 74, 255))},
+           version="1.21.6")
+```
+
+The layout is `assets/<namespace>/textures/block/<name>_<face>.png` with
+`models/block/<name>.json` and `blockstates/<name>.json` for blocks, and
+`textures/item/<name>.png` with `models/item/<name>.json` for icons. Three things
+worth knowing:
+
+- a resource pack cannot *add* blocks or items, only replace shipped assets, so
+  the default namespace is `minecraft`: the pack overrides vanilla models and
+  block states too, which is what makes the generated textures show up;
+- a block whose vanilla model depends on block states (stairs, doors, ...) loses
+  those state variants in the pack — every state renders the generated model;
+- `pack_format` is version-dependent; the table in `skinlib.pack` is transcribed
+  from the Minecraft Wiki (resource packs) and a version it does not list — a
+  snapshot — needs the number passed explicitly (`format=`).
 
 ### Vanilla game data
 
