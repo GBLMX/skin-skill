@@ -452,6 +452,9 @@ def recipe_to_python(recipe) -> str:
         lines.append(f"s = Skin(size={recipe.get('size', 64)!r}, "
                      f"model={recipe.get('model', 'steve')!r})")
     for step in steps:
+        if step.get("op") == "texture":
+            raise ValueError("the 'texture' op must be the first step: it "
+                             "replaces the canvas")
         lines.append(_emit(step))
     if recipe.get("output"):
         lines.append(f's.save({recipe["output"]!r})')

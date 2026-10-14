@@ -330,6 +330,8 @@ CLI: `mc-skin harmonize skin.png --reference cape.png` (plus `--mode`,
 - **Poses**: `natural`, `walking`, `sitting`, `crouching`, `jumping`, `aiming`
 - **Textures**: `block()`, `icon()`, `Texture`, `from_spec()`, `generate()` —
   non-skin sheets on the same primitives, see [Generic textures](#generic-textures)
+- **Packs**: `build_pack()`, `pack_format()`, `pack_meta()` — a loadable resource
+  pack, see [Resource packs](#resource-packs)
 - **Loading**: legacy 64×32 auto-converts to 64×64; Mojang matte (solid-color
   transparency keyed on the top-left pixel) is auto-stripped on load
 

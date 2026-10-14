@@ -152,11 +152,15 @@ def test_recipe_texture_skin_ops_rejected():
 
 
 def test_recipe_texture_must_come_first():
+    recipe = {"steps": [
+        {"op": "paint", "part": "body", "color": "#00ff00"},
+        {"op": "texture", "color": "#112233"},
+    ]}
     with pytest.raises(ValueError, match="must be the first step"):
-        generate_from_recipe({"steps": [
-            {"op": "paint", "part": "body", "color": "#00ff00"},
-            {"op": "texture", "color": "#112233"},
-        ]})
+        generate_from_recipe(recipe)
+    # the code generator has to agree with the executor, not emit the step anyway
+    with pytest.raises(ValueError, match="must be the first step"):
+        recipe_to_python(recipe)
 
 
 def test_recipe_output_dir_needs_a_texture(tmp_path):

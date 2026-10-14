@@ -89,16 +89,19 @@ def test_build_pack_single_face_block_uses_cube_all(tmp_path):
 
 
 def test_build_pack_rejects_unknown_face_shapes(tmp_path):
+    out = tmp_path / "pack"
     with pytest.raises(ValueError, match="knows the cube set"):
-        build_pack(tmp_path / "pack",
-                   blocks={"weird": block((1, 2, 3, 255), faces=("top", "side"))},
+        build_pack(out, blocks={"weird": block((1, 2, 3, 255), faces=("top", "side"))},
                    version="1.21.6")
+    # validation happens before writing, so no half-written pack is left behind
+    assert not out.exists()
 
 
 def test_build_pack_rejects_multi_face_items(tmp_path):
+    out = tmp_path / "pack"
     with pytest.raises(ValueError, match="single sprite"):
-        build_pack(tmp_path / "pack", items={"weird": block((1, 2, 3, 255))},
-                   version="1.21.6")
+        build_pack(out, items={"weird": block((1, 2, 3, 255))}, version="1.21.6")
+    assert not out.exists()
 
 
 def test_build_pack_zip_puts_mcmeta_at_the_root(tmp_path):

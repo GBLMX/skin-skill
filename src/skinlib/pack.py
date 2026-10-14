@@ -173,9 +173,6 @@ def _write_textures(root: Path, namespace: str, blocks: Mapping[str, Texture],
     for name, tex in blocks.items():
         tex.save_faces(root / "assets" / namespace / "textures" / "block", name)
     for name, tex in items.items():
-        if len(tex.faces) != 1:
-            raise ValueError(f"item {name!r} has faces {list(tex.faces)}; "
-                             f"an item icon is a single sprite")
         path = root / "assets" / namespace / "textures" / "item"
         path.mkdir(parents=True, exist_ok=True)
         tex.save(path / f"{name}.png")
@@ -196,6 +193,9 @@ def build_pack(target: Union[str, Path], blocks: Mapping[str, Texture] = None,
     ``.zip`` (written as a zip with ``pack.mcmeta`` at its root).  ``version``
     selects ``pack_format`` from the table; ``format`` overrides it for a
     version the table does not know.  Returns the path written.
+
+    Raises ``ValueError`` -- before writing anything -- when a texture's face
+    set cannot be modelled, so a failed call leaves no half-written pack.
     """
     blocks = dict(blocks or ())
     items = dict(items or ())
@@ -205,15 +205,24 @@ def build_pack(target: Union[str, Path], blocks: Mapping[str, Texture] = None,
         raise ValueError("pass version= (to look the format up) or format=")
     meta = pack_meta(version or "", format, description)
 
+    # Check every face set before writing anything: a bad input must not leave
+    # a half-written pack (or an .mcmeta for textures that are not there).
+    block_models = {name: _block_model(namespace, name, tex)
+                    for name, tex in blocks.items()}
+    for name, tex in items.items():
+        if len(tex.faces) != 1:
+            raise ValueError(f"item {name!r} has faces {list(tex.faces)}; "
+                             f"an item icon is a single sprite")
+
     target = Path(target)
     zipping = target.suffix.lower() == ".zip"
     root = Path(tempfile.mkdtemp(prefix="skinlib-pack-")) if zipping else target
     try:
         _write_json(root / "pack.mcmeta", meta)
         _write_textures(root, namespace, blocks, items)
-        for name, tex in blocks.items():
+        for name, model in block_models.items():
             _write_json(root / "assets" / namespace / "models" / "block"
-                        / f"{name}.json", _block_model(namespace, name, tex))
+                        / f"{name}.json", model)
             _write_json(root / "assets" / namespace / "blockstates"
                         / f"{name}.json", _blockstate(namespace, name))
         for name in items:
