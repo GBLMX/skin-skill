@@ -472,6 +472,9 @@ def _cmd_texture_family(a):
 def _emit_textures(a, entries, label: str = None):
     """Save generated textures: into a resource pack, or as loose PNGs."""
     if a.pack:
+        if a.scale != 1:
+            print(f"note: --scale {a.scale} is ignored for packs; textures are "
+                  f"written at their native size")
         try:
             path = build_pack(
                 a.pack,
